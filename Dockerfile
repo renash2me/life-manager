@@ -8,7 +8,7 @@ RUN apk add --no-cache git curl
 FROM base AS frontend-builder
 WORKDIR /app/client
 COPY client/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 COPY client/ ./
 RUN npm run build
 
@@ -33,15 +33,11 @@ COPY --from=frontend-builder --chown=nextjs:nodejs /app/client/build ./client/bu
 # Copiar arquivos do backend
 COPY --from=backend-builder --chown=nextjs:nodejs /app/server ./server
 
-# Copiar arquivos de configuração
-COPY package*.json ./
+# Copiar arquivos de configuração necessários para o entrypoint
 COPY docker-entrypoint.sh ./
 
 # Tornar script executável
 RUN chmod +x docker-entrypoint.sh
-
-# Instalar dependências de produção
-RUN npm ci --only=production
 
 # Criar diretórios para dados persistentes
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
