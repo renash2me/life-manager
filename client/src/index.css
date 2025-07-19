@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  @apply bg-[#1e1e1e] text-[#d4d4d4]; /* VSCode dark background/text */
+}
+body {
+  @apply transition-colors duration-300 bg-[#1e1e1e] text-[#d4d4d4];
+}
+:root {
+  --vscode-blue: #007acc;
+  --vscode-bg: #1e1e1e;
+  --vscode-bg-light: #252526;
+  --vscode-bg-dark: #181818;
+  --vscode-border: #333333;
+  --vscode-green: #4ec9b0;
+  --vscode-yellow: #dcdcaa;
+}
+.dark html, .dark body {
+  @apply bg-[#1e1e1e] text-[#d4d4d4];
+}
+
+/* Menu e navegação */
+nav {
+  @apply bg-[#252526] text-[#d4d4d4] border-b border-[#333];
+}
+nav a {
+  @apply px-3 py-2 rounded text-[#d4d4d4] hover:bg-[#2c2c32] transition;
+}
+nav a.active {
+  @apply bg-[var(--vscode-blue)] text-white;
+}
+
+/* Cards e tabelas */
+.bg-card {
+  @apply bg-[#252526] text-[#d4d4d4] rounded-xl shadow border border-[#333];
+}
+.bg-card-light {
+  @apply bg-white text-[#222] rounded-xl shadow border border-[#eee];
+}
+
+/* Botões */
+.btn {
+  @apply px-3 py-1 rounded font-medium transition;
+}
+.btn-primary {
+  @apply bg-[var(--vscode-blue)] text-white hover:bg-blue-700;
+}
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+.btn-outline {
+  @apply border border-[#333] text-[#d4d4d4] hover:bg-[#232323];
+}
+
+/* Inputs */
+input, select, textarea {
+  @apply bg-[#1e1e1e] text-[#d4d4d4] border border-[#333] rounded p-1;
+}
+input:focus, select:focus, textarea:focus {
+  @apply outline-none border-[var(--vscode-blue)];
+}
+
+/* Gráficos */
+.recharts-wrapper {
+  background: #252526 !important;
+}

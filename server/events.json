@@ -1,0 +1,23 @@
+[
+  {
+    "actionId": "1752861695902",
+    "descricao": "Caminhada no Parque",
+    "gastoPlanejado": false,
+    "data": "2025-07-18",
+    "id": 1752863212499
+  },
+  {
+    "actionId": "1",
+    "descricao": "Caminhada com o Luiz",
+    "gastoPlanejado": false,
+    "data": "2025-07-18",
+    "id": 1752865419457
+  },
+  {
+    "actionId": "1752866399465",
+    "descricao": "",
+    "gastoPlanejado": true,
+    "data": "2025-07-18",
+    "id": 1752866644416
+  }
+]

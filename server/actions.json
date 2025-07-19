@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "nome": "Caminhada (acompanhado de amigos)",
+    "descricao": "Caminhada com amigos em local aberto.",
+    "areas": {
+      "Saúde": 0.5,
+      "Finanças": 0,
+      "Mente": 0.5,
+      "Relacionamentos": 1
+    },
+    "categorias": [
+      "Exercício"
+    ],
+    "gastoPlanejado": false,
+    "sinergia": true,
+    "penalidadeFinanceiraPlanejado": -1,
+    "penalidadeFinanceiraNaoPlanejado": -3
+  },
+  {
+    "nome": "Caminhada (sozinho)",
+    "descricao": "Caminhada sozinho em local aberto",
+    "areas": {
+      "Saúde": 0.5,
+      "Mente": 0.5
+    },
+    "categorias": [],
+    "gastoPlanejado": false,
+    "sinergia": false,
+    "penalidadeFinanceiraPlanejado": 0,
+    "penalidadeFinanceiraNaoPlanejado": 0,
+    "id": 1752861695902
+  },
+  {
+    "nome": "Churrasco com amigos",
+    "descricao": "Churrasco com amigos",
+    "areas": {
+      "Finanças": -1,
+      "Relacionamentos": 1,
+      "Vida Profissional": 1
+    },
+    "categorias": [],
+    "gastoPlanejado": false,
+    "sinergia": true,
+    "id": 1752866399465
+  }
+]

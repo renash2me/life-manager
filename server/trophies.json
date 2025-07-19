@@ -1,0 +1,88 @@
+[
+  {
+    "nome": "Atleta de fim de semana",
+    "descricao": "Caminhe 10x em um mês",
+    "objetivos": [
+      {
+        "tipo": "quantidade_evento",
+        "evento": "Caminhada (sozinho)",
+        "quantidade": 10,
+        "area": "",
+        "dias": 1
+      }
+    ],
+    "recompensas": [
+      {
+        "tipo": "trofeu"
+      },
+      {
+        "tipo": "desbloqueia",
+        "trofeu": "Atleta de começo de carreira"
+      }
+    ],
+    "id": 1752865846255
+  },
+  {
+    "nome": "Analista Pleno",
+    "descricao": "Ser promovido a Analista Pleno",
+    "objetivos": [
+      {
+        "tipo": "sem_negativo",
+        "evento": "",
+        "quantidade": 1,
+        "area": "Vida Profissional",
+        "dias": 1,
+        "temPrazo": true,
+        "intervalo": "1",
+        "unidade": "ano"
+      },
+      {
+        "tipo": "quantidade_evento",
+        "evento": "Churrasco com amigos",
+        "quantidade": 3,
+        "area": "",
+        "dias": 1
+      },
+      {
+        "tipo": "quantidade_evento",
+        "evento": "Fazer Curso Profissionalizante",
+        "quantidade": 3,
+        "area": "",
+        "dias": 1
+      }
+    ],
+    "recompensas": [
+      {
+        "tipo": "multiplicador",
+        "area": "Finanças",
+        "positivo": 1.2,
+        "negativo": 0.9
+      }
+    ],
+    "id": 1752866562636,
+    "tipo": "meta"
+  },
+  {
+    "nome": "Teste",
+    "descricao": "Teste",
+    "objetivos": [
+      {
+        "tipo": "pontuacao_area",
+        "evento": "",
+        "quantidade": 1,
+        "area": "Saúde",
+        "dias": 1,
+        "pontos": 1,
+        "temPrazo": false,
+        "intervalo": "",
+        "unidade": "dias"
+      }
+    ],
+    "recompensas": [
+      {
+        "tipo": "trofeu"
+      }
+    ],
+    "id": 1752874293649
+  }
+]
