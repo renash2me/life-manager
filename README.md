@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Life Manager Game 🎮
 
 Um jogo de gerenciamento de vida que ajuda você a equilibrar diferentes áreas da vida através de pontuação e metas.
@@ -247,3 +248,7 @@ Este projeto está sob a licença ISC. Veja o arquivo `LICENSE` para mais detalh
 **Desenvolvido com ❤️ pela Life Manager Team**
 
 *Versão 1.0.0 - Janeiro 2024* 
+=======
+# life-manager
+Projeto de gamificaao da vida. Em busca da minha melhor versão
+>>>>>>> a3008bf205f5e25ad29b54412c9b97603f98f106
