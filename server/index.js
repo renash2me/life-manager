@@ -8,6 +8,15 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Servir arquivos estáticos do frontend React
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// Rota catch-all para SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+});
+
 const actionsPath = path.join(__dirname, 'actions.json');
 const eventsPath = path.join(__dirname, 'events.json');
 const trophiesPath = path.join(__dirname, 'trophies.json');
