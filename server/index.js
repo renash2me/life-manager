@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 
 // Servir arquivos estáticos do frontend React
-const path = require('path');
 app.use(express.static(path.join(__dirname, '../client/build')));
 
 // Rota catch-all para SPA
