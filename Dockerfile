@@ -15,7 +15,8 @@ RUN npm run build
 # Stage 2: Build do Backend
 FROM base AS backend-builder
 WORKDIR /app/server
-COPY server/package*.json ./
+COPY ./server/package.json ./package.json
+COPY ./server/package-lock.json ./package-lock.json
 RUN npm ci --only=production
 COPY server/ ./
 
