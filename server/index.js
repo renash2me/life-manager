@@ -11,11 +11,7 @@ app.use(express.json());
 // Servir arquivos estáticos do frontend React
 app.use(express.static(path.join(__dirname, '../client/build')));
 
-// Rota catch-all para SPA
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-});
-
+// Todas as rotas de API devem vir ANTES do catch-all do React
 const actionsPath = path.join(__dirname, 'actions.json');
 const eventsPath = path.join(__dirname, 'events.json');
 const trophiesPath = path.join(__dirname, 'trophies.json');
@@ -255,6 +251,11 @@ app.get('/api/system', (req, res) => {
     platform: process.platform,
     nodeVersion: process.version
   });
+});
+
+// Rota catch-all para SPA (deve ser a última)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 app.listen(PORT, () => {
