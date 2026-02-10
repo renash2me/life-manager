@@ -92,13 +92,13 @@ def health_overview():
     ).order_by(Workout.start_time.desc()).limit(10).all()
 
     return jsonify({
-        'steps': [{'date': str(r.day), 'qty': round(r.total)} for r in steps_rows],
-        'heartRate': [{'date': str(r.day), 'Avg': round(r.avg_val, 1), 'Min': round(r.min_val, 1), 'Max': round(r.max_val, 1)} for r in hr_rows],
-        'restingHeartRate': [{'date': str(r.day), 'avg': round(r.avg_val, 1)} for r in rhr_rows],
+        'steps': [{'date': str(r.day), 'qty': round(r.total)} for r in steps_rows if r.total],
+        'heartRate': [{'date': str(r.day), 'Avg': round(r.avg_val or 0, 1), 'Min': round(r.min_val or 0, 1), 'Max': round(r.max_val or 0, 1)} for r in hr_rows],
+        'restingHeartRate': [{'date': str(r.day), 'avg': round(r.avg_val or 0, 1)} for r in rhr_rows],
         'sleep': [{'date': m.date.isoformat(), **m.data} for m in sleep],
         'weight': [{'date': str(r.day), 'qty': float(r.qty) if r.qty else 0} for r in weight_rows],
-        'activeEnergy': [{'date': str(r.day), 'kcal': round(r.total)} for r in energy_rows],
-        'distance': [{'date': str(r.day), 'km': round(r.total, 2)} for r in distance_rows],
+        'activeEnergy': [{'date': str(r.day), 'kcal': round(r.total)} for r in energy_rows if r.total],
+        'distance': [{'date': str(r.day), 'km': round(r.total, 2)} for r in distance_rows if r.total],
         'workouts': [w.to_dict() for w in workouts],
     })
 
