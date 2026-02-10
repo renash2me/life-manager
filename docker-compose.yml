@@ -3,14 +3,22 @@ services:
     build: .
     container_name: life-manager
     ports:
-      - "5000:5000"
+      - "7001:5000"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://admin:senha123@192.168.15.184:5432/lifemanager}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me}
       - FLASK_ENV=${FLASK_ENV:-production}
+    volumes:
+      - app_data:/app/data
+      - ./config:/app/config
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/info"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+volumes:
+  app_data:
