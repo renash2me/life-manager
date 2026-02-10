@@ -16,25 +16,25 @@ def health_overview():
 
     steps = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name == 'Step Count',
+        HealthMetric.metric_name == 'step_count',
         HealthMetric.date >= since,
     ).order_by(HealthMetric.date.asc()).all()
 
     heart_rate = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name == 'Heart Rate',
+        HealthMetric.metric_name == 'heart_rate',
         HealthMetric.date >= since,
     ).order_by(HealthMetric.date.asc()).all()
 
     sleep = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name == 'Sleep Analysis',
+        HealthMetric.metric_name == 'sleep_analysis',
         HealthMetric.date >= since,
     ).order_by(HealthMetric.date.asc()).all()
 
     weight = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name.in_(['Weight/Body Mass', 'Body Mass', 'Body Weight']),
+        HealthMetric.metric_name == 'weight_body_mass',
     ).order_by(HealthMetric.date.asc()).limit(90).all()
 
     workouts = Workout.query.filter(
@@ -58,20 +58,20 @@ def daily_summary():
 
     latest_steps = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name == 'Step Count',
+        HealthMetric.metric_name == 'step_count',
         db.func.date(HealthMetric.date) == today,
     ).order_by(HealthMetric.date.desc()).first()
 
     yesterday = today - timedelta(days=1)
     latest_sleep = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name == 'Sleep Analysis',
+        HealthMetric.metric_name == 'sleep_analysis',
         db.func.date(HealthMetric.date) >= yesterday,
     ).order_by(HealthMetric.date.desc()).first()
 
     latest_weight = HealthMetric.query.filter(
         HealthMetric.user_id == 1,
-        HealthMetric.metric_name.in_(['Weight/Body Mass', 'Body Mass', 'Body Weight']),
+        HealthMetric.metric_name == 'weight_body_mass',
     ).order_by(HealthMetric.date.desc()).first()
 
     score = calculate_daily_score(1, today)
