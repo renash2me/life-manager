@@ -7,7 +7,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://admin:senha123@192.168.15.184:5432/lifemanager}
+      - DB_HOST=${DB_HOST:-192.168.15.184}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-renato}
+      - DB_PASSWORD=${DB_PASSWORD:-Teste01}
+      - DB_NAME=${DB_NAME:-lifemanager}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me}
       - FLASK_ENV=${FLASK_ENV:-production}
     volumes:

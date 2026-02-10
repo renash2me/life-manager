@@ -4,6 +4,14 @@ services:
     container_name: life-manager
     ports:
       - "7001:5000"
+    environment:
+      - DB_HOST=192.168.15.184
+      - DB_PORT=5432
+      - DB_USER=renato
+      - DB_PASSWORD=Teste01
+      - DB_NAME=lifemanager
+      - FLASK_SECRET_KEY=change-me
+      - FLASK_ENV=production
     volumes:
       - app_data:/app/data
     restart: unless-stopped
