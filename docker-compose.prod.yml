@@ -1,18 +1,11 @@
 services:
   app:
-    build: https://github.com/renash2me/life-manager.git#main
+    image: ghcr.io/renash2me/life-manager:latest
     container_name: life-manager
     ports:
       - "7001:5000"
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://admin:senha123@192.168.15.184:5432/lifemanager}
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change-me}
-      - FLASK_ENV=${FLASK_ENV:-production}
     volumes:
       - app_data:/app/data
-      - ./config:/app/config
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/info"]
