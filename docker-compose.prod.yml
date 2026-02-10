@@ -1,6 +1,6 @@
 services:
   app:
-    image: rezambelli/life-manager:latest
+    image: renash002/life-manager:latest
     container_name: life-manager
     ports:
       - "7001:5000"
