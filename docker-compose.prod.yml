@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/renash2me/life-manager:latest
+    image: rezambelli/life-manager:latest
     container_name: life-manager
     ports:
       - "7001:5000"
