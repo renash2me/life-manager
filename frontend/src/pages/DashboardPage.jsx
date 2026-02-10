@@ -56,6 +56,24 @@ function DashboardPage() {
             <Col xs={4}>
               <Card className="text-center">
                 <Card.Body>
+                  <Card.Subtitle className="text-muted mb-1">Calorias</Card.Subtitle>
+                  <h3>{summary?.activeEnergy?.kcal?.toLocaleString() || '--'}</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={4}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Subtitle className="text-muted mb-1">Peso</Card.Subtitle>
+                  <h3>{summary?.weight?.qty ? `${Number(summary.weight.qty).toFixed(1)} kg` : '--'}</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+          <Row className="mt-2">
+            <Col xs={4}>
+              <Card className="text-center">
+                <Card.Body>
                   <Card.Subtitle className="text-muted mb-1">Sono</Card.Subtitle>
                   <h3>{summary?.sleep?.asleep ? `${(summary.sleep.asleep / 3600).toFixed(1)}h` : '--'}</h3>
                 </Card.Body>
@@ -64,8 +82,16 @@ function DashboardPage() {
             <Col xs={4}>
               <Card className="text-center">
                 <Card.Body>
-                  <Card.Subtitle className="text-muted mb-1">Peso</Card.Subtitle>
-                  <h3>{summary?.weight?.qty ? `${summary.weight.qty.toFixed(1)} kg` : '--'}</h3>
+                  <Card.Subtitle className="text-muted mb-1">FC Repouso</Card.Subtitle>
+                  <h3>{summary?.restingHeartRate?.avg ? `${summary.restingHeartRate.avg} bpm` : '--'}</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={4}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Subtitle className="text-muted mb-1">Score</Card.Subtitle>
+                  <h3>{summary?.score?.total?.toFixed(1) || '--'}</h3>
                 </Card.Body>
               </Card>
             </Col>
@@ -80,8 +106,7 @@ function DashboardPage() {
           <Card.Body>
             <h5 className="text-muted">Nenhum dado de saúde ainda</h5>
             <p className="text-muted">
-              Configure o Health Auto Export no seu iPhone para enviar dados automaticamente
-              para <code>http://seu-servidor:5000/api/health/ingest</code>
+              Configure o Health Auto Export no seu iPhone para enviar dados automaticamente.
             </p>
           </Card.Body>
         </Card>

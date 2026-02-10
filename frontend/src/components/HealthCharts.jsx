@@ -7,9 +7,10 @@ import {
 function HealthCharts({ data }) {
   if (!data) return null
 
+  // Data already comes aggregated by day from the backend
   const stepsChart = (data.steps || []).map((d) => ({
-    date: d.date.slice(0, 10),
-    steps: d.qty || 0,
+    date: d.date,
+    steps: d.qty,
   }))
 
   const sleepChart = (data.sleep || []).map((d) => ({
@@ -20,15 +21,25 @@ function HealthCharts({ data }) {
   }))
 
   const hrChart = (data.heartRate || []).map((d) => ({
-    date: d.date.slice(0, 10),
-    avg: d.Avg || 0,
-    min: d.Min || 0,
-    max: d.Max || 0,
+    date: d.date,
+    avg: d.Avg,
+    min: d.Min,
+    max: d.Max,
   }))
 
   const weightChart = (data.weight || []).map((d) => ({
     date: d.date.slice(0, 10),
-    kg: d.qty || 0,
+    kg: d.qty ? +Number(d.qty).toFixed(1) : 0,
+  }))
+
+  const energyChart = (data.activeEnergy || []).map((d) => ({
+    date: d.date,
+    kcal: d.kcal,
+  }))
+
+  const distanceChart = (data.distance || []).map((d) => ({
+    date: d.date,
+    km: d.km,
   }))
 
   return (
@@ -45,6 +56,25 @@ function HealthCharts({ data }) {
                   <YAxis />
                   <Tooltip />
                   <Bar dataKey="steps" fill="#16a34a" name="Passos" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+      )}
+
+      {energyChart.length > 0 && (
+        <Col md={6} className="mb-4">
+          <Card>
+            <Card.Body>
+              <Card.Title>Calorias Ativas (kcal)</Card.Title>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={energyChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="kcal" fill="#f59e42" name="kcal" />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -90,6 +120,25 @@ function HealthCharts({ data }) {
                   <Line type="monotone" dataKey="min" stroke="#0ea5e9" name="Mín" strokeDasharray="3 3" />
                   <Line type="monotone" dataKey="max" stroke="#ef4444" name="Máx" strokeDasharray="3 3" />
                 </LineChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+      )}
+
+      {distanceChart.length > 0 && (
+        <Col md={6} className="mb-4">
+          <Card>
+            <Card.Body>
+              <Card.Title>Distância (km)</Card.Title>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={distanceChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" fontSize={12} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="km" fill="#0ea5e9" name="km" />
+                </BarChart>
               </ResponsiveContainer>
             </Card.Body>
           </Card>
