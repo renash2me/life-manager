@@ -62,7 +62,17 @@ def create_app(config_name=None):
             return send_from_directory(app.static_folder, 'index.html')
         return {'message': 'Life Manager API running. Frontend not built yet.'}, 200
 
-    # CLI: seed command
+    # CLI: init-db command
+    @app.cli.command('init-db')
+    def init_db_command():
+        """Create all tables and seed initial data."""
+        db.create_all()
+        print('Tables created.')
+        from .seed.seed_data import seed_initial_data
+        seed_initial_data()
+        print('Database seeded successfully.')
+
+    # CLI: seed command (without table creation)
     @app.cli.command('seed')
     def seed_command():
         """Seed the database with initial data."""
