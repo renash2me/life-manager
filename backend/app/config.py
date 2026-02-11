@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from urllib.parse import quote_plus
 
 
@@ -22,6 +23,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = build_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'life-manager-jwt-secret')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
 
 
 class DevelopmentConfig(Config):

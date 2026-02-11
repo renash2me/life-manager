@@ -2,10 +2,24 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 async function apiRequest(path, options = {}) {
   const url = `${API_BASE}${path}`
-  const response = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
+  const headers = { 'Content-Type': 'application/json', ...options.headers }
+
+  // Add auth token if available
+  const token = localStorage.getItem('lm_token')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(url, { headers, ...options })
+
+  // Handle 401 - redirect to login
+  if (response.status === 401) {
+    localStorage.removeItem('lm_token')
+    localStorage.removeItem('lm_user')
+    window.location.href = '/login'
+    throw new Error('Sessão expirada')
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }))
     throw new Error(error.error || `HTTP ${response.status}`)
@@ -15,9 +29,14 @@ async function apiRequest(path, options = {}) {
 }
 
 export const api = {
+  // Auth
+  login: (data) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  register: (data) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  getMe: () => apiRequest('/auth/me'),
+
   // Health
   getHealthOverview: (days = 7) => apiRequest(`/dashboard/health?days=${days}`),
-  getDailySummary: () => apiRequest('/dashboard/summary'),
+  getDailySummary: (date) => apiRequest(`/dashboard/summary${date ? `?date=${date}` : ''}`),
   getMetricNames: () => apiRequest('/health/metrics/names'),
 
   // Gamification
@@ -38,8 +57,9 @@ export const api = {
   createTrophy: (data) => apiRequest('/trophies', { method: 'POST', body: JSON.stringify(data) }),
 
   // User
-  getUser: () => apiRequest('/user/1'),
-  updateUser: (data) => apiRequest('/user/1', { method: 'PUT', body: JSON.stringify(data) }),
+  getUser: () => apiRequest('/user/me'),
+  updateUser: (data) => apiRequest('/user/me', { method: 'PUT', body: JSON.stringify(data) }),
+  getUserStats: () => apiRequest('/user/stats'),
 
   // Info
   getInfo: () => apiRequest('/info'),

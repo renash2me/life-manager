@@ -1,7 +1,7 @@
 import os
 from flask import Flask, send_from_directory
 from .config import config
-from .extensions import db, migrate, cors
+from .extensions import db, migrate, cors, jwt
 
 
 def create_app(config_name=None):
@@ -24,16 +24,19 @@ def create_app(config_name=None):
     db.init_app(app)
     migrate.init_app(app, db)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    jwt.init_app(app)
 
     # Import models so Alembic can detect them
     from . import models  # noqa: F401
 
     # Register blueprints
+    from .routes.auth import auth_bp
     from .routes.health import health_bp
     from .routes.gamification import gamification_bp
     from .routes.user import user_bp
     from .routes.dashboard import dashboard_bp
 
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(health_bp, url_prefix='/api/health')
     app.register_blueprint(gamification_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -79,5 +82,13 @@ def create_app(config_name=None):
         from .seed.seed_data import seed_initial_data
         seed_initial_data()
         print('Database seeded successfully.')
+
+    # CLI: backfill workout events
+    @app.cli.command('backfill-workout-events')
+    def backfill_workout_events():
+        """Create gamification events for existing workouts that don't have them."""
+        from .services.auto_events import process_pending_workout_events
+        created = process_pending_workout_events()
+        print(f'Created {created} events from existing workouts.')
 
     return app

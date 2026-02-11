@@ -7,7 +7,14 @@ def seed_initial_data():
     """Seed the database with initial data from Better Life project."""
     # Default user
     if not User.query.first():
-        db.session.add(User(nome='Renato', email='renato@lifemanager.local'))
+        user = User(nome='Renato', email='renato@lifemanager.local')
+        user.set_password('mudar123')
+        db.session.add(user)
+    else:
+        # Set password for existing user if not set
+        user = User.query.first()
+        if not user.password_hash:
+            user.set_password('mudar123')
 
     # Actions (from Better Life/server/actions.json)
     if not Action.query.first():

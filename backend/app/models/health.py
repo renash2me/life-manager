@@ -38,6 +38,7 @@ class Workout(db.Model):
     end_time = db.Column(db.DateTime, nullable=True)
     duration = db.Column(db.Integer, nullable=True)
     data = db.Column(db.JSON, nullable=False)
+    event_created = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -48,4 +49,5 @@ class Workout(db.Model):
             'endTime': self.end_time.isoformat() if self.end_time else None,
             'duration': self.duration,
             'data': self.data,
+            'eventCreated': self.event_created,
         }

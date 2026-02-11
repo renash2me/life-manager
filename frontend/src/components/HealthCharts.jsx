@@ -28,6 +28,7 @@ function HealthCharts({ data }) {
   const weightChart = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
   const energyChart = (data.activeEnergy || []).map((d) => ({ date: d.date, kcal: d.kcal }))
   const distanceChart = (data.distance || []).map((d) => ({ date: d.date, km: d.km }))
+  const mindfulChart = (data.mindfulness || []).map((d) => ({ date: d.date, minutes: d.minutes }))
 
   return (
     <Row>
@@ -145,6 +146,25 @@ function HealthCharts({ data }) {
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
                 </LineChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+      )}
+
+      {mindfulChart.length > 0 && (
+        <Col md={6} className="mb-4">
+          <Card className="lm-chart-card">
+            <Card.Body>
+              <Card.Title>Meditação (min)</Card.Title>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+                <BarChart data={mindfulChart}>
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="minutes" fill="#a855f7" name="Minutos" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </Card.Body>
           </Card>

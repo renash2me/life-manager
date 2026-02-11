@@ -1,11 +1,13 @@
 from datetime import date, timedelta
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
 from ..extensions import db
 from ..models.gamification import Action, Event, Trophy, UserTrophy
 from ..models.user import User
 from ..services.scoring import calculate_daily_score, calculate_score_history
 from ..services.leveling import process_level_up
 from ..services.trophies import evaluate_trophies
+from .auth_helpers import get_current_user_id, get_current_user
 
 gamification_bp = Blueprint('gamification', __name__)
 
@@ -13,12 +15,14 @@ gamification_bp = Blueprint('gamification', __name__)
 # --- Actions CRUD ---
 
 @gamification_bp.route('/actions', methods=['GET'])
+@jwt_required()
 def list_actions():
     actions = Action.query.all()
     return jsonify([a.to_dict() for a in actions])
 
 
 @gamification_bp.route('/actions', methods=['POST'])
+@jwt_required()
 def create_action():
     data = request.get_json()
     action = Action(
@@ -34,6 +38,7 @@ def create_action():
 
 
 @gamification_bp.route('/actions/<int:action_id>', methods=['PUT'])
+@jwt_required()
 def update_action(action_id):
     action = Action.query.get_or_404(action_id)
     data = request.get_json()
@@ -47,6 +52,7 @@ def update_action(action_id):
 
 
 @gamification_bp.route('/actions/<int:action_id>', methods=['DELETE'])
+@jwt_required()
 def delete_action(action_id):
     action = Action.query.get_or_404(action_id)
     db.session.delete(action)
@@ -57,11 +63,13 @@ def delete_action(action_id):
 # --- Events ---
 
 @gamification_bp.route('/events', methods=['GET'])
+@jwt_required()
 def list_events():
+    user_id = get_current_user_id()
     days = request.args.get('days', 30, type=int)
     since = date.today() - timedelta(days=days)
     events = Event.query.filter(
-        Event.user_id == 1,
+        Event.user_id == user_id,
         Event.data >= since,
     ).order_by(Event.data.desc()).all()
 
@@ -74,16 +82,18 @@ def list_events():
 
 
 @gamification_bp.route('/events', methods=['POST'])
+@jwt_required()
 def create_event():
     """Create event, calculate XP, check level up, evaluate trophies."""
     data = request.get_json()
-    user = User.query.get(1)
+    user_id = get_current_user_id()
+    user = User.query.get(user_id)
     action = Action.query.get(data['actionId'])
     if not action:
         return jsonify({'error': 'Action not found'}), 404
 
     event = Event(
-        user_id=1,
+        user_id=user_id,
         action_id=data['actionId'],
         descricao=data.get('descricao', ''),
         gasto_planejado=data.get('gastoPlanejado', False),
@@ -114,28 +124,34 @@ def create_event():
 # --- Score ---
 
 @gamification_bp.route('/score', methods=['GET'])
+@jwt_required()
 def get_score():
+    user_id = get_current_user_id()
     target_date = request.args.get('date', date.today().isoformat())
-    score = calculate_daily_score(1, target_date)
+    score = calculate_daily_score(user_id, target_date)
     return jsonify(score)
 
 
 @gamification_bp.route('/score/history', methods=['GET'])
+@jwt_required()
 def get_score_history():
+    user_id = get_current_user_id()
     days = request.args.get('days', 30, type=int)
-    history = calculate_score_history(1, days)
+    history = calculate_score_history(user_id, days)
     return jsonify(history)
 
 
 # --- Trophies ---
 
 @gamification_bp.route('/trophies', methods=['GET'])
+@jwt_required()
 def list_trophies():
     trophies = Trophy.query.all()
     return jsonify([t.to_dict() for t in trophies])
 
 
 @gamification_bp.route('/trophies', methods=['POST'])
+@jwt_required()
 def create_trophy():
     data = request.get_json()
     trophy = Trophy(
@@ -150,6 +166,7 @@ def create_trophy():
 
 
 @gamification_bp.route('/trophies/<int:trophy_id>', methods=['PUT'])
+@jwt_required()
 def update_trophy(trophy_id):
     trophy = Trophy.query.get_or_404(trophy_id)
     data = request.get_json()
@@ -162,6 +179,7 @@ def update_trophy(trophy_id):
 
 
 @gamification_bp.route('/trophies/<int:trophy_id>', methods=['DELETE'])
+@jwt_required()
 def delete_trophy(trophy_id):
     trophy = Trophy.query.get_or_404(trophy_id)
     db.session.delete(trophy)
@@ -170,8 +188,10 @@ def delete_trophy(trophy_id):
 
 
 @gamification_bp.route('/trophies/earned', methods=['GET'])
+@jwt_required()
 def earned_trophies():
-    earned = UserTrophy.query.filter_by(user_id=1).all()
+    user_id = get_current_user_id()
+    earned = UserTrophy.query.filter_by(user_id=user_id).all()
     result = []
     for ut in earned:
         trophy_dict = ut.trophy.to_dict()

@@ -1,6 +1,7 @@
 from datetime import datetime
 from ..extensions import db
 from ..models.health import HealthMetric, Workout
+from ..models.user import User
 
 
 def parse_date(date_str):
@@ -31,6 +32,7 @@ def process_health_export(payload, user_id):
     Process a Health Auto Export JSON payload.
     Stores each metric data point and workout as a separate row.
     Uses upsert to avoid duplicates.
+    After storing, creates auto-events for workouts and mindfulness.
     """
     data = payload.get('data', payload)
     metrics_list = data.get('metrics', [])
@@ -38,7 +40,10 @@ def process_health_export(payload, user_id):
 
     metrics_stored = 0
     workouts_stored = 0
+    events_created = 0
     errors = []
+    new_workout_ids = []
+    mindful_by_date = {}
 
     for metric in metrics_list:
         metric_name = metric.get('name', 'Unknown')
@@ -71,6 +76,15 @@ def process_health_export(payload, user_id):
                         data=data_without_date,
                     ))
                 metrics_stored += 1
+
+                # Track mindfulness minutes by date
+                if metric_name in ('mindful_minutes', 'apple_exercise_time') and \
+                        metric_name == 'mindful_minutes':
+                    qty = data_without_date.get('qty', 0)
+                    if qty:
+                        day = parsed_date.date()
+                        mindful_by_date[day] = mindful_by_date.get(day, 0) + float(qty)
+
             except Exception as e:
                 errors.append(f"Metric {metric_name}: {str(e)}")
 
@@ -97,23 +111,56 @@ def process_health_export(payload, user_id):
                 existing.duration = duration
                 existing.end_time = end_time
             else:
-                db.session.add(Workout(
+                w = Workout(
                     user_id=user_id,
                     name=name,
                     start_time=start_time,
                     end_time=end_time,
                     duration=duration,
                     data=workout_data,
-                ))
+                    event_created=False,
+                )
+                db.session.add(w)
+                db.session.flush()
+                new_workout_ids.append(w.id)
             workouts_stored += 1
         except Exception as e:
             errors.append(f"Workout: {str(e)}")
 
     db.session.commit()
 
+    # Auto-create events for new workouts
+    try:
+        from .auto_events import create_event_for_workout
+        user = User.query.get(user_id)
+        if user and new_workout_ids:
+            for wid in new_workout_ids:
+                workout = Workout.query.get(wid)
+                if workout and not workout.event_created:
+                    event = create_event_for_workout(workout, user)
+                    if event:
+                        events_created += 1
+            db.session.commit()
+    except Exception as e:
+        errors.append(f"Auto-event workout: {str(e)}")
+
+    # Auto-create events for mindfulness
+    try:
+        from .auto_events import create_event_for_mindfulness
+        for day, minutes in mindful_by_date.items():
+            if minutes >= 1:
+                event = create_event_for_mindfulness(user_id, minutes, day)
+                if event:
+                    events_created += 1
+        if mindful_by_date:
+            db.session.commit()
+    except Exception as e:
+        errors.append(f"Auto-event mindfulness: {str(e)}")
+
     return {
         'status': 'ok',
         'metricsStored': metrics_stored,
         'workoutsStored': workouts_stored,
+        'eventsCreated': events_created,
         'errors': errors if errors else None,
     }

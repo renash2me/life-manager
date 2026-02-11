@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import bcrypt
 from ..extensions import db
 
 
@@ -19,10 +20,24 @@ class User(db.Model):
     workouts = db.relationship('Workout', backref='user', lazy=True)
     earned_trophies = db.relationship('UserTrophy', backref='user', lazy=True)
 
+    def set_password(self, password):
+        self.password_hash = bcrypt.hashpw(
+            password.encode('utf-8'), bcrypt.gensalt()
+        ).decode('utf-8')
+
+    def check_password(self, password):
+        if not self.password_hash:
+            return False
+        return bcrypt.checkpw(
+            password.encode('utf-8'),
+            self.password_hash.encode('utf-8'),
+        )
+
     def to_dict(self):
         return {
             'id': self.id,
             'nome': self.nome,
+            'email': self.email,
             'level': self.level,
             'experience': self.experience,
             'nextLevelExp': self.next_level_exp,

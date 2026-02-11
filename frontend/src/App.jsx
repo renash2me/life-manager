@@ -1,13 +1,28 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Container, Navbar, Nav } from 'react-bootstrap'
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { Container, Navbar, Nav, Spinner, Button } from 'react-bootstrap'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import DashboardPage from './pages/DashboardPage'
 import EventsPage from './pages/EventsPage'
 import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
 import TrophiesPage from './pages/TrophiesPage'
+import LoginPage from './pages/LoginPage'
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div className="text-center mt-5"><Spinner animation="border" /></div>
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
 
 function AppLayout() {
   const location = useLocation()
+  const { user, logout } = useAuth()
 
   const navItems = [
     { path: '/', label: 'Dashboard' },
@@ -16,6 +31,8 @@ function AppLayout() {
     { path: '/profile', label: 'Perfil' },
     { path: '/admin', label: 'Admin' },
   ]
+
+  if (!user) return null
 
   return (
     <>
@@ -38,26 +55,51 @@ function AppLayout() {
                 </Nav.Link>
               ))}
             </Nav>
+            <Nav>
+              <Navbar.Text className="me-3 text-muted small">
+                {user.nome}
+              </Navbar.Text>
+              <Button variant="outline-secondary" size="sm" onClick={logout}>
+                Sair
+              </Button>
+            </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
       <Container className="py-4">
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/trophies" element={<TrophiesPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+          <Route path="/trophies" element={<ProtectedRoute><TrophiesPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
         </Routes>
       </Container>
     </>
   )
 }
 
+function AppRoutes() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div className="text-center mt-5"><Spinner animation="border" /></div>
+  }
+
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/*" element={<AppLayout />} />
+    </Routes>
+  )
+}
+
 function App() {
   return (
     <Router>
-      <AppLayout />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </Router>
   )
 }
