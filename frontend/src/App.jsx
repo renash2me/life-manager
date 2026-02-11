@@ -32,7 +32,7 @@ function AppLayout() {
     { path: '/admin', label: 'Admin' },
   ]
 
-  if (!user) return null
+  if (!user) return <Navigate to="/login" replace />
 
   return (
     <>
