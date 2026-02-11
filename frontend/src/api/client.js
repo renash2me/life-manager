@@ -2,7 +2,8 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 async function apiRequest(path, options = {}) {
   const url = `${API_BASE}${path}`
-  const headers = { 'Content-Type': 'application/json', ...options.headers }
+  const { headers: extraHeaders, ...fetchOptions } = options
+  const headers = { 'Content-Type': 'application/json', ...extraHeaders }
 
   // Add auth token if available
   const token = localStorage.getItem('lm_token')
@@ -10,19 +11,22 @@ async function apiRequest(path, options = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const response = await fetch(url, { headers, ...options })
+  const response = await fetch(url, { ...fetchOptions, headers })
 
-  // Handle 401 - redirect to login
-  if (response.status === 401) {
-    localStorage.removeItem('lm_token')
-    localStorage.removeItem('lm_user')
-    window.location.href = '/login'
-    throw new Error('Sessão expirada')
+  // Handle auth errors (401 = expired/missing, 422 = invalid token from Flask-JWT-Extended)
+  if (response.status === 401 || response.status === 422) {
+    // Don't clear token for login/register requests
+    if (!path.startsWith('/auth/login') && !path.startsWith('/auth/register')) {
+      localStorage.removeItem('lm_token')
+      localStorage.removeItem('lm_user')
+      window.location.href = '/login'
+      throw new Error('Sessão expirada')
+    }
   }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error(error.error || `HTTP ${response.status}`)
+    throw new Error(error.error || error.msg || `HTTP ${response.status}`)
   }
   if (response.status === 204) return null
   return response.json()
