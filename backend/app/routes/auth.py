@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required
+from flask_jwt_extended import create_access_token, jwt_required, decode_token
 from ..extensions import db
 from ..models.user import User
 from .auth_helpers import get_current_user
@@ -53,3 +53,31 @@ def me():
     if not user:
         return jsonify({'error': 'Usuário não encontrado'}), 404
     return jsonify(user.to_dict())
+
+
+@auth_bp.route('/debug-token', methods=['GET'])
+def debug_token():
+    """Debug endpoint to test JWT token validation without redirect loops."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({
+            'valid': False,
+            'error': 'No Bearer token in Authorization header',
+            'header': auth_header[:100] if auth_header else '(empty)',
+        })
+
+    token = auth_header[7:]
+    try:
+        decoded = decode_token(token)
+        return jsonify({
+            'valid': True,
+            'identity': decoded.get('sub'),
+            'type': decoded.get('type'),
+            'expires': decoded.get('exp'),
+        })
+    except Exception as e:
+        return jsonify({
+            'valid': False,
+            'error': str(e),
+            'token_start': token[:30] + '...' if len(token) > 30 else token,
+        })

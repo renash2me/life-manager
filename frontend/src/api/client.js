@@ -13,10 +13,9 @@ async function apiRequest(path, options = {}) {
 
   const response = await fetch(url, { ...fetchOptions, headers })
 
-  // Handle auth errors (401 = expired/missing, 422 = invalid token from Flask-JWT-Extended)
-  if (response.status === 401 || response.status === 422) {
-    // Don't clear token for login/register requests
-    if (!path.startsWith('/auth/login') && !path.startsWith('/auth/register')) {
+  // Only redirect on 401 (expired/missing token)
+  if (response.status === 401) {
+    if (!path.startsWith('/auth/')) {
       localStorage.removeItem('lm_token')
       localStorage.removeItem('lm_user')
       window.location.href = '/login'
