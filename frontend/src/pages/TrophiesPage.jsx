@@ -25,16 +25,16 @@ function TrophiesPage() {
 
   return (
     <>
-      <h4 className="mb-4">Troféus</h4>
+      <h4 className="lm-section-header mb-4">Troféus</h4>
       <Row>
         {trophies.map((trophy) => {
           const isEarned = earnedIds.has(trophy.id)
           const earnedData = earned.find((t) => t.id === trophy.id)
           return (
             <Col md={4} lg={3} key={trophy.id} className="mb-4">
-              <Card className={isEarned ? 'border-success' : ''} style={{ opacity: isEarned ? 1 : 0.5 }}>
+              <Card className={`lm-trophy-card ${isEarned ? 'lm-trophy-earned' : 'lm-trophy-locked'}`}>
                 <Card.Body className="text-center">
-                  <div style={{ fontSize: 40 }}>{isEarned ? '🏆' : '🔒'}</div>
+                  <div style={{ fontSize: 48 }}>{isEarned ? '🏆' : '🔒'}</div>
                   <Card.Title className="mt-2">{trophy.nome}</Card.Title>
                   <Card.Text className="text-muted small">{trophy.descricao}</Card.Text>
                   <Card.Text>

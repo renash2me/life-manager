@@ -1,0 +1,333 @@
+/* ===========================
+   Life Manager - Dark RPG Theme
+   =========================== */
+
+:root[data-bs-theme="dark"] {
+  /* Base backgrounds */
+  --lm-bg-body: #0f1117;
+  --lm-bg-card: #1a1d28;
+  --lm-bg-surface: #141620;
+
+  /* Accent colors */
+  --lm-accent-primary: #7c3aed;
+  --lm-accent-green: #16a34a;
+  --lm-accent-gold: #facc15;
+  --lm-accent-blue: #0ea5e9;
+  --lm-accent-red: #f43f5e;
+  --lm-accent-orange: #f59e42;
+
+  /* Gradients */
+  --lm-gradient-primary: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  --lm-gradient-gold: linear-gradient(135deg, #facc15 0%, #f59e42 100%);
+
+  /* Borders & shadows */
+  --lm-border: rgba(255, 255, 255, 0.08);
+  --lm-glow-gold: 0 0 20px rgba(250, 204, 21, 0.3);
+  --lm-glow-purple: 0 0 15px rgba(124, 58, 237, 0.25);
+
+  /* Bootstrap overrides */
+  --bs-body-bg: var(--lm-bg-body);
+  --bs-card-bg: var(--lm-bg-card);
+  --bs-card-border-color: var(--lm-border);
+}
+
+/* ===========================
+   Global
+   =========================== */
+
+body {
+  background: var(--lm-bg-body);
+  color: #e2e8f0;
+}
+
+.card {
+  border-radius: 12px;
+  border: 1px solid var(--lm-border);
+  background: var(--lm-bg-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ===========================
+   Navbar
+   =========================== */
+
+.lm-navbar {
+  background: rgba(15, 17, 23, 0.88) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--lm-accent-primary), transparent 80%) 1;
+  padding: 0.6rem 0;
+}
+
+.lm-navbar .navbar-brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
+.lm-navbar .nav-link {
+  color: #94a3b8 !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem !important;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.lm-navbar .nav-link:hover {
+  color: #e2e8f0 !important;
+}
+
+.lm-navbar .nav-link.active {
+  color: var(--lm-accent-primary) !important;
+  border-bottom-color: var(--lm-accent-primary);
+}
+
+.lm-brand-icon {
+  font-size: 1.2rem;
+  margin-right: 6px;
+}
+
+/* ===========================
+   Metric Cards (Dashboard)
+   =========================== */
+
+.lm-metric-card {
+  border: 1px solid var(--lm-border);
+  border-radius: 12px;
+  background: var(--lm-bg-card);
+}
+
+.lm-metric-card:hover {
+  box-shadow: var(--lm-glow-purple);
+}
+
+.lm-metric-card h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: var(--lm-gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lm-metric-icon {
+  font-size: 1rem;
+  margin-right: 4px;
+}
+
+/* ===========================
+   Period Selector
+   =========================== */
+
+.lm-period-selector .btn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 1rem;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+}
+
+.lm-period-selector .btn:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: var(--lm-accent-primary);
+  color: #e2e8f0;
+}
+
+.lm-period-selector .btn-check:checked + .btn,
+.lm-period-selector .btn.active {
+  background: var(--lm-accent-primary) !important;
+  border-color: var(--lm-accent-primary) !important;
+  color: #fff !important;
+}
+
+/* ===========================
+   Chart Cards
+   =========================== */
+
+.lm-chart-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lm-chart-card .card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+/* ===========================
+   Tables
+   =========================== */
+
+.lm-table thead th {
+  background: var(--lm-bg-surface);
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid var(--lm-accent-primary) !important;
+}
+
+.lm-table tbody tr {
+  border-color: var(--lm-border);
+}
+
+.lm-table tbody tr:hover {
+  background: rgba(124, 58, 237, 0.06);
+}
+
+/* ===========================
+   Form Cards
+   =========================== */
+
+.lm-form-card {
+  border-left: 3px solid var(--lm-accent-primary) !important;
+}
+
+/* ===========================
+   Level Badge (circular ring)
+   =========================== */
+
+.lm-level-card {
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.lm-level-ring-container {
+  position: relative;
+  display: inline-block;
+}
+
+.lm-level-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  font-weight: 800;
+  background: var(--lm-gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ===========================
+   Trophies
+   =========================== */
+
+.lm-trophy-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.lm-trophy-earned {
+  border: 1px solid rgba(250, 204, 21, 0.35) !important;
+  box-shadow: var(--lm-glow-gold);
+  animation: lm-trophy-pulse 3s ease-in-out infinite;
+}
+
+.lm-trophy-earned:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.45);
+}
+
+.lm-trophy-locked {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+}
+
+.lm-trophy-locked:hover {
+  opacity: 0.6;
+  transform: translateY(-2px);
+}
+
+@keyframes lm-trophy-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(250, 204, 21, 0.4); }
+}
+
+/* ===========================
+   Admin Tabs
+   =========================== */
+
+.lm-admin-tabs .nav-tabs {
+  border-bottom: 1px solid var(--lm-border);
+}
+
+.lm-admin-tabs .nav-tabs .nav-link {
+  color: #94a3b8;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+}
+
+.lm-admin-tabs .nav-tabs .nav-link:hover {
+  color: #e2e8f0;
+}
+
+.lm-admin-tabs .nav-tabs .nav-link.active {
+  color: var(--lm-accent-primary);
+  background: transparent;
+  border-bottom: 2px solid var(--lm-accent-primary);
+}
+
+/* ===========================
+   Animations
+   =========================== */
+
+@keyframes lm-fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lm-form-card .alert {
+  animation: lm-fade-in 0.3s ease-out;
+}
+
+/* ===========================
+   Section Headers
+   =========================== */
+
+.lm-section-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+
+@media (max-width: 768px) {
+  .lm-metric-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .lm-level-ring-container svg {
+    width: 100px;
+    height: 100px;
+  }
+
+  .lm-level-number {
+    font-size: 1.4rem;
+  }
+
+  .lm-navbar .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .lm-period-selector .btn {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.7rem;
+  }
+}

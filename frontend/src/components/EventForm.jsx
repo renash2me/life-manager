@@ -41,7 +41,7 @@ function EventForm({ actions, onCreated }) {
   }
 
   return (
-    <Card>
+    <Card className="lm-form-card">
       <Card.Body>
         <Card.Title>Registrar Evento</Card.Title>
         {feedback && (

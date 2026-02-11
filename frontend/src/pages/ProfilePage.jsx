@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Row, Col, Card, Spinner, ProgressBar } from 'react-bootstrap'
+import { Row, Col, Card, Spinner } from 'react-bootstrap'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ResponsiveContainer,
@@ -39,7 +39,6 @@ function ProfilePage() {
     return <div className="text-center mt-5"><Spinner animation="border" /></div>
   }
 
-  // Aggregate area totals from score history
   const areaTotals = {}
   scoreHistory.forEach((day) => {
     Object.entries(day.porArea || {}).forEach(([area, val]) => {
@@ -55,37 +54,40 @@ function ProfilePage() {
   const totalScore = Object.values(areaTotals).reduce((a, b) => a + b, 0)
 
   return (
-    <Row>
-      <Col md={4} className="mb-4">
-        <LevelBadge user={user} />
-        <Card className="mt-3">
-          <Card.Body>
-            <Card.Title>Estatísticas (30 dias)</Card.Title>
-            <p>Score total: <strong>{Math.round(totalScore)}</strong></p>
-            <p>Dias ativos: <strong>{scoreHistory.filter((d) => d.total > 0).length}</strong></p>
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col md={8}>
-        <Card>
-          <Card.Body>
-            <Card.Title>Equilíbrio das Áreas (30 dias)</Card.Title>
-            {radarData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="area" fontSize={12} />
-                  <PolarRadiusAxis />
-                  <Radar name="Score" dataKey="score" stroke="#16a34a" fill="#16a34a" fillOpacity={0.3} />
-                </RadarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-muted text-center mt-4">Registre eventos para ver seu equilíbrio</p>
-            )}
-          </Card.Body>
-        </Card>
-      </Col>
-    </Row>
+    <>
+      <h4 className="lm-section-header mb-4">Perfil</h4>
+      <Row>
+        <Col md={4} className="mb-4">
+          <LevelBadge user={user} />
+          <Card className="mt-3">
+            <Card.Body>
+              <Card.Title>Estatísticas (30 dias)</Card.Title>
+              <p>Score total: <strong>{Math.round(totalScore)}</strong></p>
+              <p>Dias ativos: <strong>{scoreHistory.filter((d) => d.total > 0).length}</strong></p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={8}>
+          <Card>
+            <Card.Body>
+              <Card.Title>Equilíbrio das Áreas (30 dias)</Card.Title>
+              {radarData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                    <PolarAngleAxis dataKey="area" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <PolarRadiusAxis tick={{ fill: '#64748b', fontSize: 10 }} />
+                    <Radar name="Score" dataKey="score" stroke="#a855f7" fill="#7c3aed" fillOpacity={0.35} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted text-center mt-4">Registre eventos para ver seu equilíbrio</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </>
   )
 }
 

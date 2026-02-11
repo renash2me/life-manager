@@ -73,11 +73,12 @@ function AdminPage() {
   }
 
   return (
-    <Tabs defaultActiveKey="actions" className="mb-4">
+    <><h4 className="lm-section-header mb-4">Admin</h4>
+    <Tabs defaultActiveKey="actions" className="lm-admin-tabs mb-4">
       <Tab eventKey="actions" title="Ações">
         <Row>
           <Col md={5} className="mb-4">
-            <Card>
+            <Card className="lm-form-card">
               <Card.Body>
                 <Card.Title>Nova Ação</Card.Title>
                 {actionMsg && <Alert variant={actionMsg.type} dismissible onClose={() => setActionMsg(null)}>{actionMsg.text}</Alert>}
@@ -102,7 +103,7 @@ function AdminPage() {
             <Card>
               <Card.Body>
                 <Card.Title>Ações Cadastradas</Card.Title>
-                <Table striped bordered hover responsive size="sm">
+                <Table hover responsive size="sm" className="lm-table">
                   <thead>
                     <tr><th>Nome</th><th>Áreas</th><th>Sinergia</th><th></th></tr>
                   </thead>
@@ -128,7 +129,7 @@ function AdminPage() {
       <Tab eventKey="trophies" title="Troféus">
         <Row>
           <Col md={5} className="mb-4">
-            <Card>
+            <Card className="lm-form-card">
               <Card.Body>
                 <Card.Title>Novo Troféu</Card.Title>
                 {trophyMsg && <Alert variant={trophyMsg.type} dismissible onClose={() => setTrophyMsg(null)}>{trophyMsg.text}</Alert>}
@@ -162,7 +163,7 @@ function AdminPage() {
             <Card>
               <Card.Body>
                 <Card.Title>Troféus Cadastrados</Card.Title>
-                <Table striped bordered hover responsive size="sm">
+                <Table hover responsive size="sm" className="lm-table">
                   <thead>
                     <tr><th>Nome</th><th>Descrição</th><th>Critério</th><th>XP</th></tr>
                   </thead>
@@ -183,6 +184,7 @@ function AdminPage() {
         </Row>
       </Tab>
     </Tabs>
+    </>
   )
 }
 

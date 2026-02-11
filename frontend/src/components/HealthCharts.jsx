@@ -4,58 +4,45 @@ import {
   Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
 
+const GRID_STROKE = 'rgba(255,255,255,0.06)'
+const TICK_STYLE = { fill: '#94a3b8', fontSize: 11 }
+const TOOLTIP_STYLE = {
+  backgroundColor: '#1a1d28',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '8px',
+  color: '#e2e8f0',
+}
+const CHART_HEIGHT = 280
+
 function HealthCharts({ data }) {
   if (!data) return null
 
-  // Data already comes aggregated by day from the backend
-  const stepsChart = (data.steps || []).map((d) => ({
-    date: d.date,
-    steps: d.qty,
-  }))
-
+  const stepsChart = (data.steps || []).map((d) => ({ date: d.date, steps: d.qty }))
   const sleepChart = (data.sleep || []).map((d) => ({
     date: d.date.slice(0, 10),
     total: d.asleep ? +(d.asleep / 3600).toFixed(1) : 0,
     deep: d.deep ? +(d.deep / 3600).toFixed(1) : 0,
     rem: d.rem ? +(d.rem / 3600).toFixed(1) : 0,
   }))
-
-  const hrChart = (data.heartRate || []).map((d) => ({
-    date: d.date,
-    avg: d.Avg,
-    min: d.Min,
-    max: d.Max,
-  }))
-
-  const weightChart = (data.weight || []).map((d) => ({
-    date: d.date.slice(0, 10),
-    kg: d.qty ? +Number(d.qty).toFixed(1) : 0,
-  }))
-
-  const energyChart = (data.activeEnergy || []).map((d) => ({
-    date: d.date,
-    kcal: d.kcal,
-  }))
-
-  const distanceChart = (data.distance || []).map((d) => ({
-    date: d.date,
-    km: d.km,
-  }))
+  const hrChart = (data.heartRate || []).map((d) => ({ date: d.date, avg: d.Avg, min: d.Min, max: d.Max }))
+  const weightChart = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
+  const energyChart = (data.activeEnergy || []).map((d) => ({ date: d.date, kcal: d.kcal }))
+  const distanceChart = (data.distance || []).map((d) => ({ date: d.date, km: d.km }))
 
   return (
     <Row>
       {stepsChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Passos</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <BarChart data={stepsChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="steps" fill="#16a34a" name="Passos" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="steps" fill="#16a34a" name="Passos" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -65,16 +52,16 @@ function HealthCharts({ data }) {
 
       {energyChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Calorias Ativas (kcal)</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <BarChart data={energyChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="kcal" fill="#f59e42" name="kcal" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="kcal" fill="#f59e42" name="kcal" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -84,19 +71,19 @@ function HealthCharts({ data }) {
 
       {sleepChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Sono (horas)</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <BarChart data={sleepChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="total" fill="#7c3aed" name="Total" />
-                  <Bar dataKey="deep" fill="#3b82f6" name="Profundo" />
-                  <Bar dataKey="rem" fill="#f59e42" name="REM" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
+                  <Bar dataKey="total" fill="#7c3aed" name="Total" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="deep" fill="#3b82f6" name="Profundo" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="rem" fill="#f59e42" name="REM" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -106,19 +93,19 @@ function HealthCharts({ data }) {
 
       {hrChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Frequência Cardíaca (bpm)</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <LineChart data={hrChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="avg" stroke="#f43f5e" name="Média" />
-                  <Line type="monotone" dataKey="min" stroke="#0ea5e9" name="Mín" strokeDasharray="3 3" />
-                  <Line type="monotone" dataKey="max" stroke="#ef4444" name="Máx" strokeDasharray="3 3" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
+                  <Line type="monotone" dataKey="avg" stroke="#f43f5e" name="Média" dot={false} strokeWidth={2} />
+                  <Line type="monotone" dataKey="min" stroke="#0ea5e9" name="Mín" dot={false} strokeDasharray="4 4" />
+                  <Line type="monotone" dataKey="max" stroke="#ef4444" name="Máx" dot={false} strokeDasharray="4 4" />
                 </LineChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -128,16 +115,16 @@ function HealthCharts({ data }) {
 
       {distanceChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Distância (km)</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <BarChart data={distanceChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="km" fill="#0ea5e9" name="km" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="km" fill="#0ea5e9" name="km" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -147,16 +134,16 @@ function HealthCharts({ data }) {
 
       {weightChart.length > 0 && (
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Peso (kg)</Card.Title>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <LineChart data={weightChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis domain={['auto', 'auto']} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" />
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={TICK_STYLE} />
+                  <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -166,11 +153,11 @@ function HealthCharts({ data }) {
 
       {(data.workouts || []).length > 0 && (
         <Col md={12} className="mb-4">
-          <Card>
+          <Card className="lm-chart-card">
             <Card.Body>
               <Card.Title>Treinos Recentes</Card.Title>
               <div className="table-responsive">
-                <table className="table table-sm">
+                <table className="table table-sm lm-table">
                   <thead>
                     <tr><th>Data</th><th>Treino</th><th>Duração</th></tr>
                   </thead>

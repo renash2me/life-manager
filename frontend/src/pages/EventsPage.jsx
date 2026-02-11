@@ -25,21 +25,23 @@ function EventsPage() {
   }
 
   return (
-    <Row>
-      <Col md={4} className="mb-4">
-        <EventForm actions={actions} onCreated={loadData} />
-      </Col>
-      <Col md={8}>
-        <Card>
-          <Card.Body>
-            <Card.Title>Histórico de Eventos</Card.Title>
-            {events.length === 0 ? (
-              <p className="text-muted">Nenhum evento registrado ainda.</p>
-            ) : (
-              <Table striped bordered hover responsive size="sm">
-                <thead>
-                  <tr><th>Data</th><th>Ação</th><th>Descrição</th></tr>
-                </thead>
+    <>
+      <h4 className="lm-section-header mb-4">Eventos</h4>
+      <Row>
+        <Col md={4} className="mb-4">
+          <EventForm actions={actions} onCreated={loadData} />
+        </Col>
+        <Col md={8}>
+          <Card>
+            <Card.Body>
+              <Card.Title>Histórico de Eventos</Card.Title>
+              {events.length === 0 ? (
+                <p className="text-muted">Nenhum evento registrado ainda.</p>
+              ) : (
+                <Table hover responsive size="sm" className="lm-table">
+                  <thead>
+                    <tr><th>Data</th><th>Ação</th><th>Descrição</th></tr>
+                  </thead>
                 <tbody>
                   {events.map((ev) => (
                     <tr key={ev.id}>
@@ -55,6 +57,7 @@ function EventsPage() {
         </Card>
       </Col>
     </Row>
+    </>
   )
 }
 
