@@ -11,7 +11,8 @@ health_bp = Blueprint('health', __name__)
 
 
 def _resolve_ingest_user():
-    """Resolve user for /ingest: JWT token > X-Api-Key header > fallback user 1."""
+    """Resolve user for /ingest: JWT token > X-Api-Key header > HEALTH_EXPORT_USER_EMAIL > fallback."""
+    import os
     # Try JWT first
     from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
     try:
@@ -20,14 +21,23 @@ def _resolve_ingest_user():
     except Exception:
         pass
 
-    # Fallback: API key or default user 1 (for Health Auto Export)
+    # Try X-Api-Key header (email lookup)
     api_key = request.headers.get('X-Api-Key')
     if api_key:
         user = User.query.filter_by(email=api_key).first()
         if user:
             return user.id
-    # Default to user 1 for Health Auto Export compatibility
-    return 1
+
+    # Try env var HEALTH_EXPORT_USER_EMAIL
+    export_email = os.environ.get('HEALTH_EXPORT_USER_EMAIL')
+    if export_email:
+        user = User.query.filter_by(email=export_email).first()
+        if user:
+            return user.id
+
+    # Final fallback: first user in database
+    first_user = User.query.order_by(User.id).first()
+    return first_user.id if first_user else 1
 
 
 @health_bp.route('/ingest', methods=['POST'])

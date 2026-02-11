@@ -91,4 +91,63 @@ def create_app(config_name=None):
         created = process_pending_workout_events()
         print(f'Created {created} events from existing workouts.')
 
+    # CLI: migrate data from one user to another
+    import click
+
+    @app.cli.command('migrate-user-data')
+    @click.argument('from_id', type=int)
+    @click.argument('to_id', type=int)
+    def migrate_user_data(from_id, to_id):
+        """Migrate all data from one user to another. Usage: flask migrate-user-data 1 2"""
+        from .models.user import User
+        from .models.health import HealthMetric, Workout
+        from .models.gamification import Event, UserTrophy
+
+        src = User.query.get(from_id)
+        dst = User.query.get(to_id)
+        if not src:
+            print(f'User {from_id} not found.')
+            return
+        if not dst:
+            print(f'User {to_id} not found.')
+            return
+
+        # Migrate health metrics
+        metrics = HealthMetric.query.filter_by(user_id=from_id).count()
+        HealthMetric.query.filter_by(user_id=from_id).update({'user_id': to_id})
+        print(f'Migrated {metrics} health metrics.')
+
+        # Migrate workouts
+        workouts = Workout.query.filter_by(user_id=from_id).count()
+        Workout.query.filter_by(user_id=from_id).update({'user_id': to_id})
+        print(f'Migrated {workouts} workouts.')
+
+        # Migrate events
+        events = Event.query.filter_by(user_id=from_id).count()
+        Event.query.filter_by(user_id=from_id).update({'user_id': to_id})
+        print(f'Migrated {events} events.')
+
+        # Migrate trophies (skip duplicates)
+        user_trophies = UserTrophy.query.filter_by(user_id=from_id).all()
+        migrated_trophies = 0
+        for ut in user_trophies:
+            existing = UserTrophy.query.filter_by(
+                user_id=to_id, trophy_id=ut.trophy_id
+            ).first()
+            if not existing:
+                ut.user_id = to_id
+                migrated_trophies += 1
+            else:
+                db.session.delete(ut)
+        print(f'Migrated {migrated_trophies} trophies.')
+
+        # Transfer XP and level
+        dst.experience += src.experience
+        dst.level = max(dst.level, src.level)
+        dst.next_level_exp = max(dst.next_level_exp, src.next_level_exp)
+        print(f'Transferred XP: {src.experience}, Level: {src.level}')
+
+        db.session.commit()
+        print(f'Done! All data migrated from user {from_id} ({src.nome}) to user {to_id} ({dst.nome}).')
+
     return app
