@@ -13,11 +13,8 @@ def create_app(config_name=None):
     if not os.path.exists(static_folder):
         static_folder = os.path.join(os.path.dirname(__file__), '..', '..', 'frontend', 'dist')
 
-    app = Flask(
-        __name__,
-        static_folder=os.path.abspath(static_folder),
-        static_url_path='',
-    )
+    static_dir = os.path.abspath(static_folder)
+    app = Flask(__name__, static_folder=None)
     app.config.from_object(config[config_name])
 
     # Initialize extensions
@@ -54,15 +51,15 @@ def create_app(config_name=None):
             'areaColors': AREA_COLORS,
         }
 
-    # SPA catch-all: serve index.html for non-API routes
+    # SPA catch-all: serve static files or index.html for client-side routes
     @app.route('/')
     @app.route('/<path:path>')
     def serve_spa(path=''):
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        index_path = os.path.join(app.static_folder, 'index.html')
+        if path and os.path.exists(os.path.join(static_dir, path)):
+            return send_from_directory(static_dir, path)
+        index_path = os.path.join(static_dir, 'index.html')
         if os.path.exists(index_path):
-            return send_from_directory(app.static_folder, 'index.html')
+            return send_from_directory(static_dir, 'index.html')
         return {'message': 'Life Manager API running. Frontend not built yet.'}, 200
 
     # CLI: init-db command
