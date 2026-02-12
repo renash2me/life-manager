@@ -120,7 +120,7 @@ function DashboardPage() {
           <Row className="g-2 mt-1">
             <Col xs={4}>
               <MetricCard icon="&#x1F31C;" label="Sono">
-                {summary?.sleep?.asleep ? `${(summary.sleep.asleep / 3600).toFixed(1)}h` : '--'}
+                {summary?.sleep?.asleep ? `${Number(summary.sleep.asleep) > 24 ? (summary.sleep.asleep / 3600).toFixed(1) : Number(summary.sleep.asleep).toFixed(1)}h` : '--'}
               </MetricCard>
             </Col>
             <Col xs={4}>

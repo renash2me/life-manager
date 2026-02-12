@@ -18,11 +18,16 @@ function HealthCharts({ data }) {
   if (!data) return null
 
   const stepsChart = (data.steps || []).map((d) => ({ date: d.date, steps: d.qty }))
+  const toHours = (v) => {
+    if (!v) return 0
+    const n = Number(v)
+    return n > 24 ? +(n / 3600).toFixed(1) : +n.toFixed(1)
+  }
   const sleepChart = (data.sleep || []).map((d) => ({
     date: d.date.slice(0, 10),
-    total: d.asleep ? +(d.asleep / 3600).toFixed(1) : 0,
-    deep: d.deep ? +(d.deep / 3600).toFixed(1) : 0,
-    rem: d.rem ? +(d.rem / 3600).toFixed(1) : 0,
+    total: toHours(d.asleep || d.totalSleep),
+    deep: toHours(d.deep),
+    rem: toHours(d.rem),
   }))
   const hrChart = (data.heartRate || []).map((d) => ({ date: d.date, avg: d.Avg, min: d.Min, max: d.Max }))
   const weightChart = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
