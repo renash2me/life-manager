@@ -23,12 +23,12 @@ def _aggregate_sum(metric_name, since, user_id):
 
 
 def _aggregate_hr(metric_name, since, user_id):
-    """AVG/MIN/MAX qty per day for heart rate metrics."""
+    """AVG/MIN/MAX per day for heart rate metrics (data has Avg/Min/Max keys)."""
     rows = db.session.execute(text("""
         SELECT date::date AS day,
-               AVG(CAST(data->>'qty' AS FLOAT)) AS avg_val,
-               MIN(CAST(data->>'qty' AS FLOAT)) AS min_val,
-               MAX(CAST(data->>'qty' AS FLOAT)) AS max_val
+               AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val,
+               MIN(CAST(COALESCE(data->>'Min', data->>'qty') AS FLOAT)) AS min_val,
+               MAX(CAST(COALESCE(data->>'Max', data->>'qty') AS FLOAT)) AS max_val
         FROM health_metrics
         WHERE user_id = :uid AND metric_name = :name AND date >= :since
         GROUP BY day ORDER BY day
@@ -62,7 +62,7 @@ def health_overview():
 
     # Resting heart rate: AVG per day
     rhr_rows = db.session.execute(text("""
-        SELECT date::date AS day, AVG(CAST(data->>'qty' AS FLOAT)) AS avg_val
+        SELECT date::date AS day, AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val
         FROM health_metrics
         WHERE user_id = :uid AND metric_name = 'resting_heart_rate' AND date >= :since
         GROUP BY day ORDER BY day
@@ -141,7 +141,7 @@ def daily_summary():
 
     # Resting heart rate: latest for target date
     rhr_row = db.session.execute(text("""
-        SELECT AVG(CAST(data->>'qty' AS FLOAT)) AS avg_val
+        SELECT AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val
         FROM health_metrics
         WHERE user_id = :uid AND metric_name = 'resting_heart_rate' AND date::date = :today
     """), {'uid': user_id, 'today': target_date}).fetchone()

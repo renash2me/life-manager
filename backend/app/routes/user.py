@@ -60,8 +60,8 @@ def get_stats():
         FROM health_metrics
         WHERE user_id = :uid AND metric_name = 'sleep_analysis' AND date >= :since
     """), {'uid': user_id, 'since': since}).fetchone()
-    avg_sleep_secs = sleep_row.avg_sleep if sleep_row and sleep_row.avg_sleep else 0
-    avg_sleep_hours = avg_sleep_secs / 3600 if avg_sleep_secs else 0
+    avg_sleep_val = sleep_row.avg_sleep if sleep_row and sleep_row.avg_sleep else 0
+    avg_sleep_hours = avg_sleep_val / 3600 if avg_sleep_val > 24 else avg_sleep_val
     resistencia = min(100, round(avg_sleep_hours / 8 * 100))
 
     # Forca: workouts count + duration (10 workouts/month = 100)
