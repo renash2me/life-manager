@@ -21,7 +21,12 @@ function HealthCharts({ data }) {
   const toHours = (v) => {
     if (!v) return 0
     const n = Number(v)
-    return n > 24 ? +(n / 3600).toFixed(1) : +n.toFixed(1)
+    return n > 24 ? +(n / 3600).toFixed(2) : +n.toFixed(2)
+  }
+  const fmtSleep = (val) => {
+    const h = Math.floor(val)
+    const m = Math.round((val - h) * 60)
+    return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`
   }
   const sleepChart = (data.sleep || []).map((d) => ({
     date: d.date.slice(0, 10),
@@ -79,13 +84,13 @@ function HealthCharts({ data }) {
         <Col md={6} className="mb-4">
           <Card className="lm-chart-card">
             <Card.Body>
-              <Card.Title>Sono (horas)</Card.Title>
+              <Card.Title>Sono</Card.Title>
               <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <BarChart data={sleepChart}>
                   <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
                   <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <YAxis tick={TICK_STYLE} tickFormatter={fmtSleep} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => fmtSleep(val)} />
                   <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
                   <Bar dataKey="total" fill="#7c3aed" name="Total" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="deep" fill="#3b82f6" name="Profundo" radius={[4, 4, 0, 0]} />

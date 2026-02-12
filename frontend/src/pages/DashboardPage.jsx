@@ -120,7 +120,7 @@ function DashboardPage() {
           <Row className="g-2 mt-1">
             <Col xs={4}>
               <MetricCard icon="&#x1F31C;" label="Sono">
-                {summary?.sleep?.asleep ? `${Number(summary.sleep.asleep) > 24 ? (summary.sleep.asleep / 3600).toFixed(1) : Number(summary.sleep.asleep).toFixed(1)}h` : '--'}
+                {summary?.sleep?.asleep ? (() => { const v = Number(summary.sleep.asleep); const hrs = v > 24 ? v / 3600 : v; const h = Math.floor(hrs); const m = Math.round((hrs - h) * 60); return `${String(h).padStart(2,'0')}h${String(m).padStart(2,'0')}`; })() : '--'}
               </MetricCard>
             </Col>
             <Col xs={4}>
