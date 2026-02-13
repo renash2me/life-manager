@@ -7,6 +7,7 @@ import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
 import TrophiesPage from './pages/TrophiesPage'
 import LoginPage from './pages/LoginPage'
+import MetricDetailPage from './pages/MetricDetailPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -73,6 +74,7 @@ function AppLayout() {
           <Route path="/trophies" element={<ProtectedRoute><TrophiesPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/metric/:metricKey" element={<ProtectedRoute><MetricDetailPage /></ProtectedRoute>} />
         </Routes>
       </Container>
     </>

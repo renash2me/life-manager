@@ -111,6 +111,83 @@ def health_overview():
     })
 
 
+METRIC_KEY_MAP = {
+    'steps': {'name': 'step_count', 'type': 'sum', 'field': 'qty', 'unit': 'passos', 'label': 'Passos'},
+    'activeEnergy': {'name': 'active_energy', 'type': 'sum', 'field': 'qty', 'unit': 'kcal', 'label': 'Calorias Ativas'},
+    'distance': {'name': 'walking_running_distance', 'type': 'sum', 'field': 'qty', 'unit': 'km', 'label': 'Distancia'},
+    'weight': {'name': 'weight_body_mass', 'type': 'latest', 'field': 'qty', 'unit': 'kg', 'label': 'Peso'},
+    'sleep': {'name': 'sleep_analysis', 'type': 'raw', 'field': 'asleep', 'unit': 'h', 'label': 'Sono'},
+    'restingHeartRate': {'name': 'resting_heart_rate', 'type': 'hr', 'field': 'avg', 'unit': 'bpm', 'label': 'FC Repouso'},
+    'mindfulness': {'name': 'mindful_minutes', 'type': 'sum', 'field': 'qty', 'unit': 'min', 'label': 'Meditacao'},
+    'heartRate': {'name': 'heart_rate', 'type': 'hr', 'field': 'avg', 'unit': 'bpm', 'label': 'Freq. Cardiaca'},
+}
+
+
+@dashboard_bp.route('/metric/<metric_key>', methods=['GET'])
+@jwt_required()
+def metric_detail(metric_key):
+    """Return detailed daily data for a specific metric."""
+    user_id = get_current_user_id()
+    cfg = METRIC_KEY_MAP.get(metric_key)
+    if not cfg:
+        return jsonify({'error': 'Unknown metric'}), 404
+
+    days = request.args.get('days', 365, type=int)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    metric_name = cfg['name']
+    data_points = []
+
+    if cfg['type'] == 'sum':
+        rows = _aggregate_sum(metric_name, since, user_id)
+        data_points = [{'date': str(r.day), 'value': round(r.total, 2)} for r in rows if r.total]
+    elif cfg['type'] == 'hr':
+        rows = _aggregate_hr(metric_name, since, user_id)
+        data_points = [{'date': str(r.day), 'value': round(r.avg_val or 0, 1),
+                        'min': round(r.min_val or 0, 1), 'max': round(r.max_val or 0, 1)} for r in rows]
+    elif cfg['type'] == 'latest':
+        rows = db.session.execute(text("""
+            SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
+            FROM health_metrics
+            WHERE user_id = :uid AND metric_name = :name AND date >= :since
+            ORDER BY date::date, date DESC
+        """), {'uid': user_id, 'name': metric_name, 'since': since}).fetchall()
+        data_points = [{'date': str(r.day), 'value': round(float(r.qty), 2) if r.qty else 0} for r in rows]
+    elif cfg['type'] == 'raw':
+        metrics = HealthMetric.query.filter(
+            HealthMetric.user_id == user_id,
+            HealthMetric.metric_name == metric_name,
+            HealthMetric.date >= since,
+        ).order_by(HealthMetric.date.asc()).all()
+        for m in metrics:
+            val = m.data.get('asleep') or m.data.get('totalSleep') or m.data.get('qty', 0)
+            val = float(val) if val else 0
+            # Convert seconds to hours if value looks like seconds
+            if val > 24:
+                val = val / 3600
+            data_points.append({'date': m.date.isoformat()[:10], 'value': round(val, 2)})
+
+    # Calculate stats
+    values = [p['value'] for p in data_points if p.get('value')]
+    stats = {}
+    if values:
+        stats = {
+            'avg': round(sum(values) / len(values), 1),
+            'min': round(min(values), 1),
+            'max': round(max(values), 1),
+            'total': round(sum(values), 1),
+            'count': len(values),
+        }
+
+    return jsonify({
+        'key': metric_key,
+        'label': cfg['label'],
+        'unit': cfg['unit'],
+        'chartType': 'line' if cfg['type'] in ('hr', 'latest') else 'bar',
+        'data': data_points,
+        'stats': stats,
+    })
+
+
 @dashboard_bp.route('/summary', methods=['GET'])
 @jwt_required()
 def daily_summary():

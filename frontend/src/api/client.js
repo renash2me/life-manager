@@ -41,6 +41,7 @@ export const api = {
   getHealthOverview: (days = 7) => apiRequest(`/dashboard/health?days=${days}`),
   getDailySummary: (date) => apiRequest(`/dashboard/summary${date ? `?date=${date}` : ''}`),
   getMetricNames: () => apiRequest('/health/metrics/names'),
+  getMetricDetail: (key, days = 365) => apiRequest(`/dashboard/metric/${key}?days=${days}`),
 
   // Gamification
   getActions: () => apiRequest('/actions'),
@@ -51,6 +52,7 @@ export const api = {
   getEvents: (days = 30) => apiRequest(`/events?days=${days}`),
   getXpHistory: (days = 30) => apiRequest(`/events/xp-history?days=${days}`),
   createEvent: (data) => apiRequest('/events', { method: 'POST', body: JSON.stringify(data) }),
+  deleteEvent: (id) => apiRequest(`/events/${id}`, { method: 'DELETE' }),
 
   getScore: (date) => apiRequest(`/score?date=${date}`),
   getScoreHistory: (days = 30) => apiRequest(`/score/history?days=${days}`),

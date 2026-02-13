@@ -121,6 +121,42 @@ def create_event():
     }), 201
 
 
+@gamification_bp.route('/events/<int:event_id>', methods=['DELETE'])
+@jwt_required()
+def delete_event(event_id):
+    """Delete event and reverse XP."""
+    user_id = get_current_user_id()
+    event = Event.query.get_or_404(event_id)
+    if event.user_id != user_id:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    user = User.query.get(user_id)
+    action = event.action
+
+    # Calculate XP to reverse
+    xp_removed = 0
+    if action:
+        xp_removed = sum(action.areas.values())
+        if action.sinergia and len(action.areas) >= 2:
+            xp_removed += len(action.areas)
+    user.experience = max(0, user.experience - xp_removed)
+
+    # If linked to a workout, allow re-creation
+    if event.workout_id:
+        from ..models.health import Workout
+        workout = Workout.query.get(event.workout_id)
+        if workout:
+            workout.event_created = False
+
+    db.session.delete(event)
+    db.session.commit()
+
+    return jsonify({
+        'xpRemoved': xp_removed,
+        'user': user.to_dict(),
+    })
+
+
 # --- XP History ---
 
 @gamification_bp.route('/events/xp-history', methods=['GET'])
