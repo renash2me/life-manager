@@ -88,6 +88,46 @@ def create_app(config_name=None):
         created = process_pending_workout_events()
         print(f'Created {created} events from existing workouts.')
 
+    # CLI: add workout_id column to events table
+    @app.cli.command('add-workout-id-to-events')
+    def add_workout_id_to_events():
+        """Add workout_id FK column to events table."""
+        from sqlalchemy import text as sa_text
+        with db.engine.connect() as conn:
+            # Check if column exists
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='events' AND column_name='workout_id'"
+            ))
+            if result.fetchone():
+                print('Column workout_id already exists.')
+                return
+            conn.execute(sa_text(
+                'ALTER TABLE events ADD COLUMN workout_id INTEGER '
+                'REFERENCES workouts(id)'
+            ))
+            conn.commit()
+        print('Added workout_id column to events table.')
+
+    # CLI: add preferences column to users table
+    @app.cli.command('add-user-preferences')
+    def add_user_preferences():
+        """Add preferences JSONB column to users table."""
+        from sqlalchemy import text as sa_text
+        with db.engine.connect() as conn:
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='users' AND column_name='preferences'"
+            ))
+            if result.fetchone():
+                print('Column preferences already exists.')
+                return
+            conn.execute(sa_text(
+                "ALTER TABLE users ADD COLUMN preferences JSON NOT NULL DEFAULT '{}'"
+            ))
+            conn.commit()
+        print('Added preferences column to users table.')
+
     # CLI: migrate data from one user to another
     import click
 

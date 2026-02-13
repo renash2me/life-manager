@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import text
+from sqlalchemy.orm.attributes import flag_modified
 from ..extensions import db
 from ..models.user import User
 from ..models.health import Workout
@@ -31,6 +32,20 @@ def update_me():
         user.email = data['email']
     db.session.commit()
     return jsonify(user.to_dict())
+
+
+@user_bp.route('/preferences', methods=['PATCH'])
+@jwt_required()
+def update_preferences():
+    user_id = get_current_user_id()
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    prefs = user.preferences or {}
+    prefs.update(data)
+    user.preferences = prefs
+    flag_modified(user, 'preferences')
+    db.session.commit()
+    return jsonify(user.preferences)
 
 
 @user_bp.route('/stats', methods=['GET'])

@@ -6,7 +6,7 @@ import HealthCharts from '../components/HealthCharts'
 import LevelBadge from '../components/LevelBadge'
 
 const periodOptions = [
-  { label: 'Diário', value: 'daily' },
+  { label: 'Diario', value: 'daily' },
   { label: 'Semanal', value: 'weekly' },
   { label: 'Mensal', value: 'monthly' },
   { label: 'Anual', value: 'yearly' },
@@ -39,6 +39,7 @@ function DashboardPage() {
   const [period, setPeriod] = useState('daily')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [chartsLoading, setChartsLoading] = useState(false)
+  const [favorites, setFavorites] = useState([])
   const initialLoad = useRef(true)
 
   const loadData = (p, d) => {
@@ -55,6 +56,11 @@ function DashboardPage() {
   }
 
   useEffect(() => {
+    // Load user preferences for favorites
+    api.getUser().then((user) => {
+      setFavorites(user.preferences?.favoriteCharts || [])
+    }).catch(() => {})
+
     loadData(period, selectedDate)
       .catch(console.error)
       .finally(() => {
@@ -70,6 +76,17 @@ function DashboardPage() {
       .catch(console.error)
       .finally(() => setChartsLoading(false))
   }, [period, selectedDate])
+
+  const handleToggleFavorite = (chartKey) => {
+    setFavorites((prev) => {
+      const next = prev.includes(chartKey)
+        ? prev.filter((k) => k !== chartKey)
+        : [...prev, chartKey]
+      // Persist to backend (fire-and-forget)
+      api.updatePreferences({ favoriteCharts: next }).catch(console.error)
+      return next
+    })
+  }
 
   const navigateDate = (offset) => {
     const d = new Date(selectedDate + 'T12:00:00')
@@ -129,7 +146,7 @@ function DashboardPage() {
               </MetricCard>
             </Col>
             <Col xs={4}>
-              <MetricCard icon="&#x1F9D8;" label="Meditação">
+              <MetricCard icon="&#x1F9D8;" label="Meditacao">
                 {summary?.mindfulness?.minutes ? `${summary.mindfulness.minutes}m` : '--'}
               </MetricCard>
             </Col>
@@ -138,7 +155,7 @@ function DashboardPage() {
       </Row>
 
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h5 className="lm-section-header mb-0">Dados de Saúde</h5>
+        <h5 className="lm-section-header mb-0">Dados de Saude</h5>
         <div className="d-flex align-items-center gap-3 flex-wrap">
           {period === 'daily' && (
             <div className="d-flex align-items-center gap-2">
@@ -204,17 +221,21 @@ function DashboardPage() {
         <Card className="text-center p-4 mb-4">
           <Card.Body>
             <p className="text-muted mb-0">
-              No modo diário, os dados resumidos aparecem nos cards acima.
-              Selecione Semanal, Mensal ou Anual para ver gráficos de tendência.
+              No modo diario, os dados resumidos aparecem nos cards acima.
+              Selecione Semanal, Mensal ou Anual para ver graficos de tendencia.
             </p>
           </Card.Body>
         </Card>
       ) : hasHealthData ? (
-        <HealthCharts data={healthData} />
+        <HealthCharts
+          data={healthData}
+          favorites={favorites}
+          onToggleFavorite={handleToggleFavorite}
+        />
       ) : (
         <Card className="text-center p-5">
           <Card.Body>
-            <h5 className="text-muted">Nenhum dado de saúde ainda</h5>
+            <h5 className="text-muted">Nenhum dado de saude ainda</h5>
             <p className="text-muted">
               Configure o Health Auto Export no seu iPhone para enviar dados automaticamente.
             </p>

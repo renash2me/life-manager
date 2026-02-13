@@ -110,6 +110,9 @@ def process_health_export(payload, user_id):
                 existing.data = workout_data
                 existing.duration = duration
                 existing.end_time = end_time
+                # If existing workout never created an event, include it
+                if not existing.event_created:
+                    new_workout_ids.append(existing.id)
             else:
                 w = Workout(
                     user_id=user_id,

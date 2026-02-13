@@ -14,199 +14,267 @@ const TOOLTIP_STYLE = {
 }
 const CHART_HEIGHT = 280
 
-function HealthCharts({ data }) {
+function FavoriteStar({ chartKey, favorites, onToggle }) {
+  const isFav = (favorites || []).includes(chartKey)
+  return (
+    <span
+      className={`lm-fav-star ${isFav ? 'lm-fav-star--active' : ''}`}
+      onClick={(e) => { e.stopPropagation(); onToggle(chartKey) }}
+      title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+    >
+      {isFav ? '\u2605' : '\u2606'}
+    </span>
+  )
+}
+
+function ChartCard({ chartKey, title, favorites, onToggleFavorite, children }) {
+  return (
+    <Card className="lm-chart-card">
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Card.Title className="mb-0">{title}</Card.Title>
+          <FavoriteStar chartKey={chartKey} favorites={favorites} onToggle={onToggleFavorite} />
+        </div>
+        {children}
+      </Card.Body>
+    </Card>
+  )
+}
+
+// --- Chart renderers ---
+
+const toHours = (v) => {
+  if (!v) return 0
+  const n = Number(v)
+  return n > 24 ? +(n / 3600).toFixed(2) : +n.toFixed(2)
+}
+
+const fmtSleep = (val) => {
+  const h = Math.floor(val)
+  const m = Math.round((val - h) * 60)
+  return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`
+}
+
+const CHART_RENDERERS = {
+  steps: (data) => {
+    const chartData = (data.steps || []).map((d) => ({ date: d.date, steps: d.qty }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="steps" fill="#16a34a" name="Passos" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  },
+  activeEnergy: (data) => {
+    const chartData = (data.activeEnergy || []).map((d) => ({ date: d.date, kcal: d.kcal }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="kcal" fill="#f59e42" name="kcal" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  },
+  distance: (data) => {
+    const chartData = (data.distance || []).map((d) => ({ date: d.date, km: d.km }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="km" fill="#0ea5e9" name="km" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  },
+  workouts: (data) => {
+    if (!(data.workouts || []).length) return null
+    return (
+      <div className="table-responsive">
+        <table className="table table-sm lm-table">
+          <thead>
+            <tr><th>Data</th><th>Treino</th><th>Duracao</th></tr>
+          </thead>
+          <tbody>
+            {data.workouts.map((w, i) => (
+              <tr key={i}>
+                <td>{w.startTime ? w.startTime.slice(0, 10) : '--'}</td>
+                <td>{w.name}</td>
+                <td>{w.duration ? `${Math.round(w.duration / 60)} min` : '--'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  },
+  sleep: (data) => {
+    const chartData = (data.sleep || []).map((d) => ({
+      date: d.date.slice(0, 10),
+      total: toHours(d.asleep || d.totalSleep),
+      deep: toHours(d.deep),
+      rem: toHours(d.rem),
+    }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} tickFormatter={fmtSleep} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => fmtSleep(val)} />
+          <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
+          <Bar dataKey="total" fill="#7c3aed" name="Total" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="deep" fill="#3b82f6" name="Profundo" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="rem" fill="#f59e42" name="REM" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  },
+  heartRate: (data) => {
+    const chartData = (data.heartRate || []).map((d) => ({ date: d.date, avg: d.Avg, min: d.Min, max: d.Max }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <LineChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
+          <Line type="monotone" dataKey="avg" stroke="#f43f5e" name="Media" dot={false} strokeWidth={2} />
+          <Line type="monotone" dataKey="min" stroke="#0ea5e9" name="Min" dot={false} strokeDasharray="4 4" />
+          <Line type="monotone" dataKey="max" stroke="#ef4444" name="Max" dot={false} strokeDasharray="4 4" />
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  },
+  weight: (data) => {
+    const chartData = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <LineChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  },
+  mindfulness: (data) => {
+    const chartData = (data.mindfulness || []).map((d) => ({ date: d.date, minutes: d.minutes }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="minutes" fill="#a855f7" name="Minutos" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  },
+}
+
+const CHART_TITLES = {
+  steps: 'Passos',
+  activeEnergy: 'Calorias Ativas (kcal)',
+  distance: 'Distancia (km)',
+  workouts: 'Treinos Recentes',
+  sleep: 'Sono',
+  heartRate: 'Frequencia Cardiaca (bpm)',
+  weight: 'Peso (kg)',
+  mindfulness: 'Meditacao (min)',
+}
+
+const SECTIONS = [
+  { key: 'atividade', label: 'Atividade Fisica', icon: '\uD83C\uDFCB\uFE0F', charts: ['steps', 'activeEnergy', 'distance', 'workouts'] },
+  { key: 'sono', label: 'Sono & Recuperacao', icon: '\uD83C\uDF1C', charts: ['sleep'] },
+  { key: 'saude', label: 'Saude', icon: '\u2764\uFE0F', charts: ['heartRate', 'weight'] },
+  { key: 'mente', label: 'Mente', icon: '\uD83E\uDDD8', charts: ['mindfulness'] },
+]
+
+function renderChart(chartKey, data, favorites, onToggleFavorite) {
+  const renderer = CHART_RENDERERS[chartKey]
+  if (!renderer) return null
+  const content = renderer(data)
+  if (!content) return null
+
+  const colSize = chartKey === 'workouts' ? 12 : 6
+  return (
+    <Col md={colSize} className="mb-4" key={chartKey}>
+      <ChartCard
+        chartKey={chartKey}
+        title={CHART_TITLES[chartKey]}
+        favorites={favorites}
+        onToggleFavorite={onToggleFavorite}
+      >
+        {content}
+      </ChartCard>
+    </Col>
+  )
+}
+
+function HealthCharts({ data, favorites, onToggleFavorite }) {
   if (!data) return null
 
-  const stepsChart = (data.steps || []).map((d) => ({ date: d.date, steps: d.qty }))
-  const toHours = (v) => {
-    if (!v) return 0
-    const n = Number(v)
-    return n > 24 ? +(n / 3600).toFixed(2) : +n.toFixed(2)
-  }
-  const fmtSleep = (val) => {
-    const h = Math.floor(val)
-    const m = Math.round((val - h) * 60)
-    return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`
-  }
-  const sleepChart = (data.sleep || []).map((d) => ({
-    date: d.date.slice(0, 10),
-    total: toHours(d.asleep || d.totalSleep),
-    deep: toHours(d.deep),
-    rem: toHours(d.rem),
-  }))
-  const hrChart = (data.heartRate || []).map((d) => ({ date: d.date, avg: d.Avg, min: d.Min, max: d.Max }))
-  const weightChart = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
-  const energyChart = (data.activeEnergy || []).map((d) => ({ date: d.date, kcal: d.kcal }))
-  const distanceChart = (data.distance || []).map((d) => ({ date: d.date, km: d.km }))
-  const mindfulChart = (data.mindfulness || []).map((d) => ({ date: d.date, minutes: d.minutes }))
+  const favList = favorites || []
+
+  // Favorites section
+  const favCharts = favList
+    .map((key) => renderChart(key, data, favList, onToggleFavorite))
+    .filter(Boolean)
 
   return (
-    <Row>
-      {stepsChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Passos</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={stepsChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="steps" fill="#16a34a" name="Passos" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
+    <>
+      {favCharts.length > 0 && (
+        <>
+          <div className="lm-section-divider">
+            <span className="lm-section-divider__icon">{'\u2B50'}</span>
+            <span className="lm-section-divider__label">Favoritos</span>
+          </div>
+          <Row>{favCharts}</Row>
+        </>
       )}
 
-      {energyChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Calorias Ativas (kcal)</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={energyChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="kcal" fill="#f59e42" name="kcal" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
+      {SECTIONS.map((section) => {
+        const sectionCharts = section.charts
+          .filter((key) => !favList.includes(key))
+          .map((key) => renderChart(key, data, favList, onToggleFavorite))
+          .filter(Boolean)
 
-      {sleepChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Sono</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={sleepChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} tickFormatter={fmtSleep} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => fmtSleep(val)} />
-                  <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
-                  <Bar dataKey="total" fill="#7c3aed" name="Total" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="deep" fill="#3b82f6" name="Profundo" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="rem" fill="#f59e42" name="REM" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
+        if (!sectionCharts.length) return null
 
-      {hrChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Frequência Cardíaca (bpm)</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <LineChart data={hrChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
-                  <Line type="monotone" dataKey="avg" stroke="#f43f5e" name="Média" dot={false} strokeWidth={2} />
-                  <Line type="monotone" dataKey="min" stroke="#0ea5e9" name="Mín" dot={false} strokeDasharray="4 4" />
-                  <Line type="monotone" dataKey="max" stroke="#ef4444" name="Máx" dot={false} strokeDasharray="4 4" />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
-
-      {distanceChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Distância (km)</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={distanceChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="km" fill="#0ea5e9" name="km" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
-
-      {weightChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Peso (kg)</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <LineChart data={weightChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
-
-      {mindfulChart.length > 0 && (
-        <Col md={6} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Meditação (min)</Card.Title>
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={mindfulChart}>
-                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={TICK_STYLE} />
-                  <YAxis tick={TICK_STYLE} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="minutes" fill="#a855f7" name="Minutos" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
-
-      {(data.workouts || []).length > 0 && (
-        <Col md={12} className="mb-4">
-          <Card className="lm-chart-card">
-            <Card.Body>
-              <Card.Title>Treinos Recentes</Card.Title>
-              <div className="table-responsive">
-                <table className="table table-sm lm-table">
-                  <thead>
-                    <tr><th>Data</th><th>Treino</th><th>Duração</th></tr>
-                  </thead>
-                  <tbody>
-                    {data.workouts.map((w, i) => (
-                      <tr key={i}>
-                        <td>{w.startTime ? w.startTime.slice(0, 10) : '--'}</td>
-                        <td>{w.name}</td>
-                        <td>{w.duration ? `${Math.round(w.duration / 60)} min` : '--'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      )}
-    </Row>
+        return (
+          <div key={section.key}>
+            <div className="lm-section-divider">
+              <span className="lm-section-divider__icon">{section.icon}</span>
+              <span className="lm-section-divider__label">{section.label}</span>
+            </div>
+            <Row>{sectionCharts}</Row>
+          </div>
+        )
+      })}
+    </>
   )
 }
 

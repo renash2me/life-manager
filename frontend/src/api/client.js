@@ -62,6 +62,7 @@ export const api = {
   // User
   getUser: () => apiRequest('/user/me'),
   updateUser: (data) => apiRequest('/user/me', { method: 'PUT', body: JSON.stringify(data) }),
+  updatePreferences: (data) => apiRequest('/user/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
   getUserStats: () => apiRequest('/user/stats'),
 
   // Info

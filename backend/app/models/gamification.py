@@ -31,16 +31,20 @@ class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     action_id = db.Column(db.Integer, db.ForeignKey('actions.id'), nullable=False)
+    workout_id = db.Column(db.Integer, db.ForeignKey('workouts.id'), nullable=True)
     descricao = db.Column(db.Text, nullable=True)
     gasto_planejado = db.Column(db.Boolean, default=False)
     data = db.Column(db.Date, nullable=False, default=date.today)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    workout = db.relationship('Workout', backref='event', lazy=True, uselist=False)
 
     def to_dict(self):
         return {
             'id': self.id,
             'userId': self.user_id,
             'actionId': self.action_id,
+            'workoutId': self.workout_id,
             'descricao': self.descricao,
             'gastoPlanejado': self.gasto_planejado,
             'data': self.data.isoformat(),

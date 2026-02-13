@@ -18,7 +18,9 @@ def _get_or_create_action(nome, areas, sinergia=True):
 
 
 def create_event_for_workout(workout, user):
-    """Create a gamification event for a workout."""
+    """Create a gamification event for a workout.
+    Deduplicates by workout_id so multiple workouts per day each get their own event.
+    """
     action = _get_or_create_action(
         'Exercicio Fisico',
         {'Saude': 10, 'Mente': 5},
@@ -26,12 +28,8 @@ def create_event_for_workout(workout, user):
 
     event_date = workout.start_time.date() if workout.start_time else date.today()
 
-    # Check if event already exists for this workout date + action
-    existing = Event.query.filter_by(
-        user_id=user.id,
-        action_id=action.id,
-        data=event_date,
-    ).first()
+    # Deduplicate by workout_id (allows multiple workouts per day)
+    existing = Event.query.filter_by(workout_id=workout.id).first()
 
     if existing:
         workout.event_created = True
@@ -41,6 +39,7 @@ def create_event_for_workout(workout, user):
     event = Event(
         user_id=user.id,
         action_id=action.id,
+        workout_id=workout.id,
         descricao=f'{workout.name} ({duration_min} min)',
         data=event_date,
     )
