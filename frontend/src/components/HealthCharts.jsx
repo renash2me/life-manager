@@ -58,13 +58,13 @@ const fmtSleep = (val) => {
 
 const CHART_RENDERERS = {
   steps: (data) => {
-    const chartData = (data.steps || []).map((d) => ({ date: d.date, steps: d.qty }))
+    const chartData = (data.steps || []).map((d) => ({ date: fmtDateShort(d.date), steps: d.qty }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="steps" fill="#16a34a" name="Passos" radius={[4, 4, 0, 0]} />
@@ -73,13 +73,13 @@ const CHART_RENDERERS = {
     )
   },
   activeEnergy: (data) => {
-    const chartData = (data.activeEnergy || []).map((d) => ({ date: d.date, kcal: d.kcal }))
+    const chartData = (data.activeEnergy || []).map((d) => ({ date: fmtDateShort(d.date), kcal: d.kcal }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="kcal" fill="#f59e42" name="kcal" radius={[4, 4, 0, 0]} />
@@ -88,13 +88,13 @@ const CHART_RENDERERS = {
     )
   },
   distance: (data) => {
-    const chartData = (data.distance || []).map((d) => ({ date: d.date, km: d.km }))
+    const chartData = (data.distance || []).map((d) => ({ date: fmtDateShort(d.date), km: d.km }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="km" fill="#0ea5e9" name="km" radius={[4, 4, 0, 0]} />
@@ -125,7 +125,7 @@ const CHART_RENDERERS = {
   },
   sleep: (data) => {
     const chartData = (data.sleep || []).map((d) => ({
-      date: d.date.slice(0, 10),
+      date: fmtDateShort(d.date),
       total: toHours(d.asleep || d.totalSleep),
       deep: toHours(d.deep),
       rem: toHours(d.rem),
@@ -135,7 +135,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} tickFormatter={fmtSleep} />
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => fmtSleep(val)} />
           <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
@@ -147,13 +147,13 @@ const CHART_RENDERERS = {
     )
   },
   heartRate: (data) => {
-    const chartData = (data.heartRate || []).map((d) => ({ date: d.date, avg: d.Avg, min: d.Min, max: d.Max }))
+    const chartData = (data.heartRate || []).map((d) => ({ date: fmtDateShort(d.date), avg: d.Avg, min: d.Min, max: d.Max }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <LineChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
@@ -165,13 +165,13 @@ const CHART_RENDERERS = {
     )
   },
   weight: (data) => {
-    const chartData = (data.weight || []).map((d) => ({ date: d.date.slice(0, 10), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
+    const chartData = (data.weight || []).map((d) => ({ date: fmtDateShort(d.date), kg: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <LineChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
@@ -180,13 +180,13 @@ const CHART_RENDERERS = {
     )
   },
   mindfulness: (data) => {
-    const chartData = (data.mindfulness || []).map((d) => ({ date: d.date, minutes: d.minutes }))
+    const chartData = (data.mindfulness || []).map((d) => ({ date: fmtDateShort(d.date), minutes: d.minutes }))
     if (!chartData.length) return null
     return (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="minutes" fill="#a855f7" name="Minutos" radius={[4, 4, 0, 0]} />
