@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import ScoreCard from '../components/ScoreCard'
 import HealthCharts from '../components/HealthCharts'
 import LevelBadge from '../components/LevelBadge'
+import { fmtDate } from '../utils/date'
 
 const periodOptions = [
   { label: 'Diario', value: 'daily' },
@@ -13,11 +14,6 @@ const periodOptions = [
 ]
 
 const periodDays = { daily: 1, weekly: 7, monthly: 30, yearly: 365 }
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00')
-  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
-}
 
 function MetricCard({ icon, label, children }) {
   return (
@@ -209,7 +205,7 @@ function DashboardPage() {
 
       {period === 'daily' && (
         <div className="text-center mb-3">
-          <span className="text-muted">{formatDate(selectedDate)}</span>
+          <span className="text-muted">{fmtDate(selectedDate)}</span>
         </div>
       )}
 

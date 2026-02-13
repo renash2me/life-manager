@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Row, Col, Card, Spinner } from 'react-bootstrap'
 import { api } from '../api/client'
+import { fmtDate } from '../utils/date'
 
 function TrophiesPage() {
   const [trophies, setTrophies] = useState([])
@@ -45,7 +46,7 @@ function TrophiesPage() {
                   </Card.Text>
                   {isEarned && earnedData?.earnedAt && (
                     <small className="text-success">
-                      Conquistado em {earnedData.earnedAt.slice(0, 10)}
+                      Conquistado em {fmtDate(earnedData.earnedAt)}
                     </small>
                   )}
                   {!isEarned && (

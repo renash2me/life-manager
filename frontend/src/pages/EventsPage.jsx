@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Row, Col, Card, Table, Spinner } from 'react-bootstrap'
 import { api } from '../api/client'
 import EventForm from '../components/EventForm'
+import { fmtDate } from '../utils/date'
 
 function EventsPage() {
   const [events, setEvents] = useState([])
@@ -45,7 +46,7 @@ function EventsPage() {
                 <tbody>
                   {events.map((ev) => (
                     <tr key={ev.id}>
-                      <td>{ev.data}</td>
+                      <td>{fmtDate(ev.data)}</td>
                       <td>{ev.actionNome || `#${ev.actionId}`}</td>
                       <td>{ev.descricao || '-'}</td>
                     </tr>

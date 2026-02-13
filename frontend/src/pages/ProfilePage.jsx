@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Row, Col, Card, Spinner, Tabs, Tab, ProgressBar } from 'react-bootstrap'
+import { Row, Col, Card, Spinner, Tabs, Tab, ProgressBar, Table } from 'react-bootstrap'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ResponsiveContainer,
 } from 'recharts'
 import { api } from '../api/client'
 import LevelBadge from '../components/LevelBadge'
+import { fmtDate } from '../utils/date'
 
 const AREA_DISPLAY = {
   Saude: 'Saúde',
@@ -62,6 +63,7 @@ function ProfilePage() {
   const [user, setUser] = useState(null)
   const [scoreHistory, setScoreHistory] = useState([])
   const [stats, setStats] = useState(null)
+  const [xpHistory, setXpHistory] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -69,11 +71,13 @@ function ProfilePage() {
       api.getUser(),
       api.getScoreHistory(30),
       api.getUserStats(),
+      api.getXpHistory(30),
     ])
-      .then(([userData, history, statsData]) => {
+      .then(([userData, history, statsData, xpData]) => {
         setUser(userData)
         setScoreHistory(history)
         setStats(statsData)
+        setXpHistory(xpData)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -176,6 +180,37 @@ function ProfilePage() {
                     ))
                   ) : (
                     <p className="text-muted">Registre eventos para ver seus stats.</p>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={12}>
+              <Card>
+                <Card.Body>
+                  <Card.Title className="mb-3">Historico de XP (30 dias)</Card.Title>
+                  {xpHistory.length > 0 ? (
+                    <Table hover responsive size="sm" className="lm-table">
+                      <thead>
+                        <tr>
+                          <th>Data</th>
+                          <th>Acao</th>
+                          <th>Descricao</th>
+                          <th className="text-end">XP</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {xpHistory.map((entry, i) => (
+                          <tr key={i}>
+                            <td>{fmtDate(entry.date)}</td>
+                            <td>{entry.actionNome}</td>
+                            <td>{entry.descricao || '-'}</td>
+                            <td className="text-end fw-bold" style={{ color: 'var(--lm-accent-green)' }}>+{entry.xpGained}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted">Nenhum XP ganho nos ultimos 30 dias.</p>
                   )}
                 </Card.Body>
               </Card>

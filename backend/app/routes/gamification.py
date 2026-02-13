@@ -121,6 +121,37 @@ def create_event():
     }), 201
 
 
+# --- XP History ---
+
+@gamification_bp.route('/events/xp-history', methods=['GET'])
+@jwt_required()
+def xp_history():
+    """Return recent events with calculated XP for the current user."""
+    user_id = get_current_user_id()
+    days = request.args.get('days', 30, type=int)
+    since = date.today() - timedelta(days=days)
+    events = Event.query.filter(
+        Event.user_id == user_id,
+        Event.data >= since,
+    ).order_by(Event.data.desc()).all()
+
+    result = []
+    for ev in events:
+        action = ev.action
+        if not action:
+            continue
+        xp = sum(action.areas.values())
+        if action.sinergia and len(action.areas) >= 2:
+            xp += len(action.areas)
+        result.append({
+            'date': ev.data.isoformat(),
+            'actionNome': action.nome,
+            'descricao': ev.descricao or '',
+            'xpGained': xp,
+        })
+    return jsonify(result)
+
+
 # --- Score ---
 
 @gamification_bp.route('/score', methods=['GET'])

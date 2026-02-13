@@ -49,6 +49,7 @@ export const api = {
   deleteAction: (id) => apiRequest(`/actions/${id}`, { method: 'DELETE' }),
 
   getEvents: (days = 30) => apiRequest(`/events?days=${days}`),
+  getXpHistory: (days = 30) => apiRequest(`/events/xp-history?days=${days}`),
   createEvent: (data) => apiRequest('/events', { method: 'POST', body: JSON.stringify(data) }),
 
   getScore: (date) => apiRequest(`/score?date=${date}`),

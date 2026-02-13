@@ -3,6 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
+import { fmtDate, fmtDateShort } from '../utils/date'
 
 const GRID_STROKE = 'rgba(255,255,255,0.06)'
 const TICK_STYLE = { fill: '#94a3b8', fontSize: 11 }
@@ -63,7 +64,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="steps" fill="#16a34a" name="Passos" radius={[4, 4, 0, 0]} />
@@ -78,7 +79,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="kcal" fill="#f59e42" name="kcal" radius={[4, 4, 0, 0]} />
@@ -93,7 +94,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="km" fill="#0ea5e9" name="km" radius={[4, 4, 0, 0]} />
@@ -112,7 +113,7 @@ const CHART_RENDERERS = {
           <tbody>
             {data.workouts.map((w, i) => (
               <tr key={i}>
-                <td>{w.startTime ? w.startTime.slice(0, 10) : '--'}</td>
+                <td>{w.startTime ? fmtDate(w.startTime) : '--'}</td>
                 <td>{w.name}</td>
                 <td>{w.duration ? `${Math.round(w.duration / 60)} min` : '--'}</td>
               </tr>
@@ -134,7 +135,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} tickFormatter={fmtSleep} />
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(val) => fmtSleep(val)} />
           <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
@@ -152,7 +153,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <LineChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
@@ -170,7 +171,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <LineChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Line type="monotone" dataKey="kg" stroke="#a21caf" name="Peso" dot={false} strokeWidth={2} />
@@ -185,7 +186,7 @@ const CHART_RENDERERS = {
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <BarChart data={chartData}>
           <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <XAxis dataKey="date" tick={TICK_STYLE} tickFormatter={fmtDateShort} />
           <YAxis tick={TICK_STYLE} />
           <Tooltip contentStyle={TOOLTIP_STYLE} />
           <Bar dataKey="minutes" fill="#a855f7" name="Minutos" radius={[4, 4, 0, 0]} />
