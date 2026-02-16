@@ -34,6 +34,7 @@ const METRIC_COLORS = {
   restingHeartRate: '#f43f5e',
   heartRate: '#f43f5e',
   mindfulness: '#a855f7',
+  vo2max: '#0ea5e9',
 }
 
 function MetricDetailPage() {
@@ -76,6 +77,7 @@ function MetricDetailPage() {
     }
     if (metricKey === 'distance') return `${v} km`
     if (metricKey === 'weight') return `${v} kg`
+    if (metricKey === 'vo2max') return `${v} mL/min.kg`
     return data.unit ? `${v.toLocaleString()} ${data.unit}` : v.toLocaleString()
   }
 

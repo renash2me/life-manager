@@ -30,6 +30,8 @@ def update_me():
         user.nome = data['nome']
     if 'email' in data:
         user.email = data['email']
+    if 'altura' in data:
+        user.altura = float(data['altura']) if data['altura'] else None
     db.session.commit()
     return jsonify(user.to_dict())
 

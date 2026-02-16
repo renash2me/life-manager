@@ -8,6 +8,8 @@ import ProfilePage from './pages/ProfilePage'
 import TrophiesPage from './pages/TrophiesPage'
 import LoginPage from './pages/LoginPage'
 import MetricDetailPage from './pages/MetricDetailPage'
+import EvolutionPage from './pages/EvolutionPage'
+import GoalsPage from './pages/GoalsPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -28,7 +30,9 @@ function AppLayout() {
   const navItems = [
     { path: '/', label: 'Dashboard' },
     { path: '/events', label: 'Eventos' },
-    { path: '/trophies', label: 'Troféus' },
+    { path: '/evolucao', label: 'Evolucao' },
+    { path: '/metas', label: 'Metas' },
+    { path: '/trophies', label: 'Trofeus' },
     { path: '/profile', label: 'Perfil' },
     { path: '/admin', label: 'Admin' },
   ]
@@ -74,6 +78,8 @@ function AppLayout() {
           <Route path="/trophies" element={<ProtectedRoute><TrophiesPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/evolucao" element={<ProtectedRoute><EvolutionPage /></ProtectedRoute>} />
+          <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
           <Route path="/metric/:metricKey" element={<ProtectedRoute><MetricDetailPage /></ProtectedRoute>} />
         </Routes>
       </Container>

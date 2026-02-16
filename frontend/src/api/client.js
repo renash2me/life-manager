@@ -68,6 +68,22 @@ export const api = {
   updatePreferences: (data) => apiRequest('/user/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
   getUserStats: () => apiRequest('/user/stats'),
 
+  // Evolution
+  getEvolution: (days = 365) => apiRequest(`/dashboard/evolution?days=${days}`),
+
+  // Goals
+  getGoals: () => apiRequest('/goals'),
+  getAllGoals: () => apiRequest('/goals/all'),
+  createGoal: (data) => apiRequest('/goals', { method: 'POST', body: JSON.stringify(data) }),
+  updateGoal: (id, data) => apiRequest(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteGoal: (id) => apiRequest(`/goals/${id}`, { method: 'DELETE' }),
+
+  // Phases
+  getPhases: () => apiRequest('/goals/phases'),
+  createPhase: (data) => apiRequest('/goals/phases', { method: 'POST', body: JSON.stringify(data) }),
+  updatePhase: (id, data) => apiRequest(`/goals/phases/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePhase: (id) => apiRequest(`/goals/phases/${id}`, { method: 'DELETE' }),
+
   // Info
   getInfo: () => apiRequest('/info'),
 }

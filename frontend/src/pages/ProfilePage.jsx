@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Row, Col, Card, Spinner, Tabs, Tab, ProgressBar, Table } from 'react-bootstrap'
+import { Row, Col, Card, Spinner, Tabs, Tab, ProgressBar, Table, Form, Button } from 'react-bootstrap'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ResponsiveContainer,
@@ -114,6 +114,35 @@ function ProfilePage() {
                   <Card.Title>Estatísticas (30 dias)</Card.Title>
                   <p>Score total: <strong>{Math.round(totalScore)}</strong></p>
                   <p>Dias ativos: <strong>{scoreHistory.filter((d) => d.total > 0).length}</strong></p>
+                </Card.Body>
+              </Card>
+              <Card className="mt-3">
+                <Card.Body>
+                  <Card.Title>Dados Pessoais</Card.Title>
+                  <Form onSubmit={(e) => {
+                    e.preventDefault()
+                    const altura = e.target.altura.value
+                    api.updateUser({ altura: altura ? parseFloat(altura) : null })
+                      .then(setUser)
+                      .catch(console.error)
+                  }}>
+                    <Form.Group className="mb-2">
+                      <Form.Label className="text-muted small">Altura (m)</Form.Label>
+                      <div className="d-flex gap-2">
+                        <Form.Control
+                          type="number"
+                          name="altura"
+                          step="0.01"
+                          min="1.00"
+                          max="2.50"
+                          placeholder="1.71"
+                          defaultValue={user?.altura || ''}
+                          size="sm"
+                        />
+                        <Button variant="outline-primary" size="sm" type="submit">Salvar</Button>
+                      </div>
+                    </Form.Group>
+                  </Form>
                 </Card.Body>
               </Card>
             </Col>

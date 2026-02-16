@@ -13,6 +13,7 @@ class User(db.Model):
     level = db.Column(db.Integer, default=1)
     experience = db.Column(db.Integer, default=0)
     next_level_exp = db.Column(db.Integer, default=1000)
+    altura = db.Column(db.Float, nullable=True)  # meters, e.g. 1.71
     preferences = db.Column(db.JSON, nullable=False, default=dict)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -42,5 +43,6 @@ class User(db.Model):
             'level': self.level,
             'experience': self.experience,
             'nextLevelExp': self.next_level_exp,
+            'altura': self.altura,
             'preferences': self.preferences or {},
         }

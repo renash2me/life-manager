@@ -153,6 +153,29 @@ function DashboardPage() {
               </MetricCard>
             </Col>
           </Row>
+          <Row className="g-2 mt-1">
+            <Col xs={4}>
+              <MetricCard icon="&#x1F4CF;" label="IMC">
+                {summary?.imc ? (
+                  <span style={{ color: summary.imc.color }}>{summary.imc.value}</span>
+                ) : '--'}
+              </MetricCard>
+            </Col>
+            <Col xs={4}>
+              <MetricCard icon="&#x1F3CB;&#xFE0F;" label="VO2 Max" onClick={() => navigate('/metric/vo2max')}>
+                {summary?.vo2max?.qty ? `${summary.vo2max.qty}` : '--'}
+              </MetricCard>
+            </Col>
+            <Col xs={4}>
+              {summary?.imc && (
+                <div className="lm-imc-category mt-1">
+                  <small className="text-muted" style={{ color: summary.imc.color }}>
+                    {summary.imc.category}
+                  </small>
+                </div>
+              )}
+            </Col>
+          </Row>
         </Col>
       </Row>
 

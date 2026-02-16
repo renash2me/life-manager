@@ -364,6 +364,97 @@ body {
 }
 
 /* ===========================
+   Metric Toggle (Evolution page)
+   =========================== */
+
+.lm-metric-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lm-metric-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #e2e8f0;
+}
+
+.lm-metric-toggle--active {
+  color: #e2e8f0;
+}
+
+.lm-metric-toggle__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ===========================
+   Phase Timeline (Goals page)
+   =========================== */
+
+.lm-phases-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lm-phase-card {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--lm-border);
+  transition: border-color 0.2s ease;
+}
+
+.lm-phase-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lm-phase-target {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ===========================
+   Goal Cards
+   =========================== */
+
+.lm-goal-card {
+  border-radius: 10px;
+  border: 1px solid var(--lm-border);
+}
+
+.lm-goal-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ===========================
+   IMC category label
+   =========================== */
+
+.lm-imc-category {
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+/* ===========================
    Responsive
    =========================== */
 

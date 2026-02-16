@@ -194,6 +194,21 @@ const CHART_RENDERERS = {
       </ResponsiveContainer>
     )
   },
+  vo2max: (data) => {
+    const chartData = (data.vo2max || []).map((d) => ({ date: fmtDateShort(d.date), vo2: d.qty ? +Number(d.qty).toFixed(1) : 0 }))
+    if (!chartData.length) return null
+    return (
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <LineChart data={chartData}>
+          <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={TICK_STYLE} />
+          <YAxis domain={['auto', 'auto']} tick={TICK_STYLE} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Line type="monotone" dataKey="vo2" stroke="#0ea5e9" name="VO2 Max" dot={false} strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  },
 }
 
 const CHART_TITLES = {
@@ -205,12 +220,13 @@ const CHART_TITLES = {
   heartRate: 'Frequencia Cardiaca (bpm)',
   weight: 'Peso (kg)',
   mindfulness: 'Meditacao (min)',
+  vo2max: 'VO2 Max (mL/min.kg)',
 }
 
 const SECTIONS = [
   { key: 'atividade', label: 'Atividade Fisica', icon: '\uD83C\uDFCB\uFE0F', charts: ['steps', 'activeEnergy', 'distance', 'workouts'] },
   { key: 'sono', label: 'Sono & Recuperacao', icon: '\uD83C\uDF1C', charts: ['sleep'] },
-  { key: 'saude', label: 'Saude', icon: '\u2764\uFE0F', charts: ['heartRate', 'weight'] },
+  { key: 'saude', label: 'Saude', icon: '\u2764\uFE0F', charts: ['heartRate', 'weight', 'vo2max'] },
   { key: 'mente', label: 'Mente', icon: '\uD83E\uDDD8', charts: ['mindfulness'] },
 ]
 
