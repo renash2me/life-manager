@@ -130,13 +130,10 @@ def create_app(config_name=None):
             conn.commit()
         print('Added preferences column to users table.')
 
-    # CLI: create goals and phases tables
-    @app.cli.command('create-goals-tables')
-    def create_goals_tables():
-        """Create goals and phases tables."""
+    # Helper: create goals and phases tables
+    def _ensure_goals_tables():
         from sqlalchemy import text as sa_text
         with db.engine.connect() as conn:
-            # Check if goals table exists
             result = conn.execute(sa_text(
                 "SELECT table_name FROM information_schema.tables "
                 "WHERE table_name='goals'"
@@ -160,7 +157,6 @@ def create_app(config_name=None):
                 """))
                 print('Created goals table.')
 
-            # Check if phases table exists
             result = conn.execute(sa_text(
                 "SELECT table_name FROM information_schema.tables "
                 "WHERE table_name='phases'"
@@ -184,10 +180,17 @@ def create_app(config_name=None):
                 print('Created phases table.')
             conn.commit()
 
+    # CLI: create goals and phases tables
+    @app.cli.command('create-goals-tables')
+    def create_goals_tables():
+        """Create goals and phases tables."""
+        _ensure_goals_tables()
+
     # CLI: seed goals from Projeto Travessia
     @app.cli.command('seed-goals')
     def seed_goals_command():
-        """Seed goals and phases from Projeto Travessia 2026."""
+        """Create tables (if needed) and seed goals/phases from Projeto Travessia 2026."""
+        _ensure_goals_tables()
         from .seed.seed_goals import seed_travessia_goals
         seed_travessia_goals()
 

@@ -9,13 +9,17 @@ def seed_travessia_goals(user_id=None):
     if user_id is None:
         user = User.query.first()
         if not user:
-            print('No user found.')
+            print('ERROR: No user found in database.')
             return
         user_id = user.id
+        print(f'Using user: {user.nome} (id={user.id}, email={user.email})')
 
     # Check if already seeded
-    if Phase.query.filter_by(user_id=user_id).first():
-        print('Goals already seeded for this user. Skipping.')
+    existing_phases = Phase.query.filter_by(user_id=user_id).count()
+    existing_goals = Goal.query.filter_by(user_id=user_id).count()
+    if existing_phases > 0 or existing_goals > 0:
+        print(f'Goals already seeded for user {user_id} ({existing_phases} phases, {existing_goals} goals). Skipping.')
+        print('To re-seed, delete existing data first: DELETE FROM phases; DELETE FROM goals;')
         return
 
     # --- Phases ---
