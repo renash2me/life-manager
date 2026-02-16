@@ -108,15 +108,22 @@ def _calc_progress(current, target, metric_key):
 def _enrich_goal(goal, user_id, today):
     """Add currentValue, progress, and checkedToday to a goal dict."""
     d = goal.to_dict()
-    if goal.goal_type == 'metric' and goal.metric_key and goal.target_value:
-        current = _get_current_value(user_id, goal.metric_key, goal.period_type)
-        d['currentValue'] = current
-        d['progress'] = _calc_progress(current, goal.target_value, goal.metric_key)
-    elif goal.goal_type == 'check':
-        check = GoalCheck.query.filter_by(goal_id=goal.id, date=today).first()
-        d['checkedToday'] = check is not None
+    try:
+        if goal.goal_type == 'metric' and goal.metric_key and goal.target_value:
+            current = _get_current_value(user_id, goal.metric_key, goal.period_type)
+            d['currentValue'] = current
+            d['progress'] = _calc_progress(current, goal.target_value, goal.metric_key)
+        elif goal.goal_type == 'check':
+            check = GoalCheck.query.filter_by(goal_id=goal.id, date=today).first()
+            d['checkedToday'] = check is not None
+            d['currentValue'] = None
+            d['progress'] = None
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         d['currentValue'] = None
-        d['progress'] = None
+        d['progress'] = 0
+        d['checkedToday'] = False
     return d
 
 
@@ -124,41 +131,46 @@ def _enrich_goal(goal, user_id, today):
 @jwt_required()
 def list_goals():
     """Return hierarchical goals: mainGoals + phases with their goals."""
-    user_id = get_current_user_id()
-    today = date.today()
+    try:
+        user_id = get_current_user_id()
+        today = date.today()
 
-    all_goals = Goal.query.filter_by(user_id=user_id, active=True).order_by(Goal.id).all()
-    phases = Phase.query.filter_by(user_id=user_id).order_by(Phase.order, Phase.start_date).all()
+        all_goals = Goal.query.filter_by(user_id=user_id, active=True).order_by(Goal.id).all()
+        phases = Phase.query.filter_by(user_id=user_id).order_by(Phase.order, Phase.start_date).all()
 
-    # Separate main goals (no phase) from phase goals
-    main_goals = []
-    phase_goals_map = {}  # phase_id -> [goals]
+        # Separate main goals (no phase) from phase goals
+        main_goals = []
+        phase_goals_map = {}  # phase_id -> [goals]
 
-    for g in all_goals:
-        # Skip goals that have already ended (unless they're annual/main)
-        if g.end_date and today > g.end_date and g.phase_id is not None:
-            continue
+        for g in all_goals:
+            # Skip goals that have already ended (unless they're annual/main)
+            if g.end_date and today > g.end_date and g.phase_id is not None:
+                continue
 
-        enriched = _enrich_goal(g, user_id, today)
+            enriched = _enrich_goal(g, user_id, today)
 
-        if g.phase_id is None:
-            main_goals.append(enriched)
-        else:
-            if g.phase_id not in phase_goals_map:
-                phase_goals_map[g.phase_id] = []
-            phase_goals_map[g.phase_id].append(enriched)
+            if g.phase_id is None:
+                main_goals.append(enriched)
+            else:
+                if g.phase_id not in phase_goals_map:
+                    phase_goals_map[g.phase_id] = []
+                phase_goals_map[g.phase_id].append(enriched)
 
-    # Build phases with their goals
-    phases_result = []
-    for p in phases:
-        pd = p.to_dict()
-        pd['goals'] = phase_goals_map.get(p.id, [])
-        phases_result.append(pd)
+        # Build phases with their goals
+        phases_result = []
+        for p in phases:
+            pd = p.to_dict()
+            pd['goals'] = phase_goals_map.get(p.id, [])
+            phases_result.append(pd)
 
-    return jsonify({
-        'mainGoals': main_goals,
-        'phases': phases_result,
-    })
+        return jsonify({
+            'mainGoals': main_goals,
+            'phases': phases_result,
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 
 @goals_bp.route('/daily', methods=['GET'])

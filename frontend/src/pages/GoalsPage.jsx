@@ -268,20 +268,25 @@ function GoalsPage() {
   const [loadingId, setLoadingId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [expanded, setExpanded] = useState({})
+  const [error, setError] = useState(null)
 
   const loadData = () => {
     return api.getGoals().then((result) => {
       setData(result)
+      setError(null)
       // Auto-expand active phase
       const activePhase = (result.phases || []).find((p) => p.status === 'active')
       if (activePhase) {
         setExpanded((prev) => ({ ...prev, [activePhase.id]: true }))
       }
+    }).catch((err) => {
+      console.error(err)
+      setError(err.message || 'Erro desconhecido')
     })
   }
 
   useEffect(() => {
-    loadData().catch(console.error).finally(() => setLoading(false))
+    loadData().finally(() => setLoading(false))
   }, [])
 
   const handleToggle = async (goalId, isChecked) => {
@@ -309,7 +314,14 @@ function GoalsPage() {
   }
 
   if (!data) {
-    return <Card className="text-center p-5"><Card.Body><p className="text-muted">Erro ao carregar metas.</p></Card.Body></Card>
+    return (
+      <Card className="text-center p-5">
+        <Card.Body>
+          <p className="text-muted">Erro ao carregar metas.</p>
+          {error && <p className="text-danger small"><code>{error}</code></p>}
+        </Card.Body>
+      </Card>
+    )
   }
 
   const mainGoals = data.mainGoals || []
