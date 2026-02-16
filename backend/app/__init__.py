@@ -186,12 +186,8 @@ def create_app(config_name=None):
         """Create goals and phases tables."""
         _ensure_goals_tables()
 
-    # CLI: migrate goals to v2 (hierarchical)
-    import click
-
-    @app.cli.command('migrate-goals-v2')
-    def migrate_goals_v2():
-        """Add phase_id, goal_type to goals and create goal_checks table."""
+    # Helper: migrate goals to v2 (hierarchical)
+    def _migrate_goals_v2():
         from sqlalchemy import text as sa_text
         with db.engine.connect() as conn:
             # Add phase_id column
@@ -265,13 +261,21 @@ def create_app(config_name=None):
             conn.commit()
         print('Goals v2 migration complete.')
 
+    import click
+
+    # CLI: migrate goals to v2 (hierarchical)
+    @app.cli.command('migrate-goals-v2')
+    def migrate_goals_v2_cmd():
+        """Add phase_id, goal_type to goals and create goal_checks table."""
+        _migrate_goals_v2()
+
     # CLI: seed goals from Projeto Travessia
     @app.cli.command('seed-goals')
-    @click.argument('user_id', required=False, default=None, type=int)
+    @click.option('--user-id', default=None, type=int, help='User ID to seed goals for')
     def seed_goals_command(user_id):
-        """Create tables, migrate to v2, and seed goals/phases. Usage: flask seed-goals [USER_ID]"""
+        """Create tables, migrate to v2, and seed goals/phases."""
         _ensure_goals_tables()
-        migrate_goals_v2()
+        _migrate_goals_v2()
         from .seed.seed_goals import seed_travessia_goals
         seed_travessia_goals(user_id=user_id)
 
