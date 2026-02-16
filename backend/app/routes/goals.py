@@ -3,15 +3,17 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import text
 from ..extensions import db
-from ..models.goals import Goal, Phase
+from ..models.goals import Goal, Phase, GoalCheck
+from ..models.gamification import Action, Event
 from ..models.health import HealthMetric
+from ..models.user import User
 from .auth_helpers import get_current_user_id
 
 goals_bp = Blueprint('goals', __name__)
 
 
 def _get_current_value(user_id, metric_key, period_type):
-    """Calculate current value for a goal based on metric data."""
+    """Calculate current value for a metric-based goal."""
     today = date.today()
 
     if period_type == 'daily':
@@ -90,13 +92,10 @@ def _get_current_value(user_id, metric_key, period_type):
 
 
 def _calc_progress(current, target, metric_key):
-    """Calculate progress percentage. For weight, lower is better."""
+    """Calculate progress percentage."""
     if current is None or target is None or target == 0:
         return 0
     if metric_key == 'weight':
-        # Inverse: starting from higher, going to lower target
-        # Progress = how much we've lost towards the goal
-        # Assume starting point is roughly 15% above target as a baseline
         start = target * 1.15
         if current <= target:
             return 100
@@ -106,35 +105,195 @@ def _calc_progress(current, target, metric_key):
     return min(100, round(current / target * 100))
 
 
+def _enrich_goal(goal, user_id, today):
+    """Add currentValue, progress, and checkedToday to a goal dict."""
+    d = goal.to_dict()
+    if goal.goal_type == 'metric' and goal.metric_key and goal.target_value:
+        current = _get_current_value(user_id, goal.metric_key, goal.period_type)
+        d['currentValue'] = current
+        d['progress'] = _calc_progress(current, goal.target_value, goal.metric_key)
+    elif goal.goal_type == 'check':
+        check = GoalCheck.query.filter_by(goal_id=goal.id, date=today).first()
+        d['checkedToday'] = check is not None
+        d['currentValue'] = None
+        d['progress'] = None
+    return d
+
+
 @goals_bp.route('', methods=['GET'])
 @jwt_required()
 def list_goals():
+    """Return hierarchical goals: mainGoals + phases with their goals."""
     user_id = get_current_user_id()
     today = date.today()
-    goals = Goal.query.filter_by(user_id=user_id, active=True).order_by(Goal.id).all()
 
-    result = []
-    for g in goals:
-        # Only include goals that haven't ended yet (past goals are excluded)
-        if g.end_date and today > g.end_date:
+    all_goals = Goal.query.filter_by(user_id=user_id, active=True).order_by(Goal.id).all()
+    phases = Phase.query.filter_by(user_id=user_id).order_by(Phase.order, Phase.start_date).all()
+
+    # Separate main goals (no phase) from phase goals
+    main_goals = []
+    phase_goals_map = {}  # phase_id -> [goals]
+
+    for g in all_goals:
+        # Skip goals that have already ended (unless they're annual/main)
+        if g.end_date and today > g.end_date and g.phase_id is not None:
             continue
 
-        current = _get_current_value(user_id, g.metric_key, g.period_type)
-        progress = _calc_progress(current, g.target_value, g.metric_key)
-        d = g.to_dict()
-        d['currentValue'] = current
-        d['progress'] = progress
-        result.append(d)
+        enriched = _enrich_goal(g, user_id, today)
 
-    return jsonify(result)
+        if g.phase_id is None:
+            main_goals.append(enriched)
+        else:
+            if g.phase_id not in phase_goals_map:
+                phase_goals_map[g.phase_id] = []
+            phase_goals_map[g.phase_id].append(enriched)
 
+    # Build phases with their goals
+    phases_result = []
+    for p in phases:
+        pd = p.to_dict()
+        pd['goals'] = phase_goals_map.get(p.id, [])
+        phases_result.append(pd)
+
+    return jsonify({
+        'mainGoals': main_goals,
+        'phases': phases_result,
+    })
+
+
+@goals_bp.route('/daily', methods=['GET'])
+@jwt_required()
+def daily_goals():
+    """Return only daily checkable goals for the active phase."""
+    user_id = get_current_user_id()
+    today = date.today()
+
+    # Find active phase
+    active_phase = Phase.query.filter(
+        Phase.user_id == user_id,
+        Phase.start_date <= today,
+        Phase.end_date >= today,
+    ).first()
+
+    if not active_phase:
+        return jsonify([])
+
+    daily = Goal.query.filter(
+        Goal.user_id == user_id,
+        Goal.phase_id == active_phase.id,
+        Goal.period_type == 'daily',
+        Goal.active == True,
+    ).order_by(Goal.id).all()
+
+    return jsonify([_enrich_goal(g, user_id, today) for g in daily])
+
+
+@goals_bp.route('/<int:goal_id>/check', methods=['POST'])
+@jwt_required()
+def check_goal(goal_id):
+    """Check a goal for today, creating a gamification event for XP."""
+    user_id = get_current_user_id()
+    today = date.today()
+
+    goal = Goal.query.filter_by(id=goal_id, user_id=user_id).first_or_404()
+
+    if goal.goal_type != 'check':
+        return jsonify({'error': 'Somente metas do tipo check podem ser marcadas'}), 400
+
+    # Check for existing check today
+    existing = GoalCheck.query.filter_by(goal_id=goal_id, date=today).first()
+    if existing:
+        return jsonify({'error': 'Meta ja marcada hoje'}), 409
+
+    # Find or create "Meta Cumprida" action
+    action = Action.query.filter_by(nome='Meta Cumprida').first()
+    if not action:
+        action = Action(nome='Meta Cumprida', areas={'Saude': 5, 'Mente': 3}, sinergia=True)
+        db.session.add(action)
+        db.session.flush()
+
+    # Create gamification event
+    desc = goal.description or 'Meta diaria cumprida'
+    event = Event(
+        user_id=user_id,
+        action_id=action.id,
+        descricao=desc,
+        data=today,
+    )
+    db.session.add(event)
+    db.session.flush()
+
+    # Calculate and add XP
+    xp = sum(action.areas.values())
+    if action.sinergia and len(action.areas) > 1:
+        xp = int(xp * 1.2)
+
+    user = User.query.get(user_id)
+    user.experience += xp
+
+    # Level up check
+    while user.experience >= user.next_level_exp:
+        user.level += 1
+        user.next_level_exp = int(user.next_level_exp * 1.2)
+
+    # Create GoalCheck
+    check = GoalCheck(
+        goal_id=goal_id,
+        user_id=user_id,
+        date=today,
+        event_id=event.id,
+    )
+    db.session.add(check)
+    db.session.commit()
+
+    return jsonify({
+        'check': check.to_dict(),
+        'xpGained': xp,
+        'user': user.to_dict(),
+    }), 201
+
+
+@goals_bp.route('/<int:goal_id>/check', methods=['DELETE'])
+@jwt_required()
+def uncheck_goal(goal_id):
+    """Uncheck a goal for today, reversing the XP event."""
+    user_id = get_current_user_id()
+    today = date.today()
+
+    check = GoalCheck.query.filter_by(goal_id=goal_id, date=today, user_id=user_id).first()
+    if not check:
+        return jsonify({'error': 'Meta nao marcada hoje'}), 404
+
+    xp_removed = 0
+
+    # Reverse XP if event exists
+    if check.event_id:
+        event = Event.query.get(check.event_id)
+        if event and event.action:
+            action = event.action
+            xp_removed = sum(action.areas.values())
+            if action.sinergia and len(action.areas) > 1:
+                xp_removed = int(xp_removed * 1.2)
+
+            user = User.query.get(user_id)
+            user.experience = max(0, user.experience - xp_removed)
+
+            db.session.delete(event)
+
+    db.session.delete(check)
+    db.session.commit()
+
+    return jsonify({'xpRemoved': xp_removed})
+
+
+# --- CRUD ---
 
 @goals_bp.route('/all', methods=['GET'])
 @jwt_required()
 def list_all_goals():
-    """List ALL goals including future/past ones, for management."""
+    """List ALL goals for management."""
     user_id = get_current_user_id()
-    goals = Goal.query.filter_by(user_id=user_id).order_by(Goal.start_date, Goal.id).all()
+    goals = Goal.query.filter_by(user_id=user_id).order_by(Goal.phase_id, Goal.id).all()
     return jsonify([g.to_dict() for g in goals])
 
 
@@ -145,9 +304,11 @@ def create_goal():
     data = request.get_json()
     goal = Goal(
         user_id=user_id,
-        metric_key=data['metricKey'],
-        target_value=data['targetValue'],
+        phase_id=data.get('phaseId'),
+        metric_key=data.get('metricKey'),
+        target_value=data.get('targetValue'),
         period_type=data['periodType'],
+        goal_type=data.get('goalType', 'metric'),
         start_date=date.fromisoformat(data['startDate']) if data.get('startDate') else None,
         end_date=date.fromisoformat(data['endDate']) if data.get('endDate') else None,
         description=data.get('description'),
@@ -164,20 +325,17 @@ def update_goal(goal_id):
     user_id = get_current_user_id()
     goal = Goal.query.filter_by(id=goal_id, user_id=user_id).first_or_404()
     data = request.get_json()
-    if 'metricKey' in data:
-        goal.metric_key = data['metricKey']
-    if 'targetValue' in data:
-        goal.target_value = data['targetValue']
-    if 'periodType' in data:
-        goal.period_type = data['periodType']
+    for field in ['metricKey', 'targetValue', 'periodType', 'goalType', 'description', 'active']:
+        camel = field
+        snake = ''.join(['_' + c.lower() if c.isupper() else c for c in field]).lstrip('_')
+        if camel in data:
+            setattr(goal, snake, data[camel])
+    if 'phaseId' in data:
+        goal.phase_id = data['phaseId']
     if 'startDate' in data:
         goal.start_date = date.fromisoformat(data['startDate']) if data['startDate'] else None
     if 'endDate' in data:
         goal.end_date = date.fromisoformat(data['endDate']) if data['endDate'] else None
-    if 'description' in data:
-        goal.description = data['description']
-    if 'active' in data:
-        goal.active = data['active']
     db.session.commit()
     return jsonify(goal.to_dict())
 
@@ -227,18 +385,13 @@ def update_phase(phase_id):
     user_id = get_current_user_id()
     phase = Phase.query.filter_by(id=phase_id, user_id=user_id).first_or_404()
     data = request.get_json()
-    if 'name' in data:
-        phase.name = data['name']
-    if 'description' in data:
-        phase.description = data['description']
+    for key in ['name', 'description', 'targets', 'order']:
+        if key in data:
+            setattr(phase, key, data[key])
     if 'startDate' in data:
         phase.start_date = date.fromisoformat(data['startDate'])
     if 'endDate' in data:
         phase.end_date = date.fromisoformat(data['endDate'])
-    if 'targets' in data:
-        phase.targets = data['targets']
-    if 'order' in data:
-        phase.order = data['order']
     db.session.commit()
     return jsonify(phase.to_dict())
 

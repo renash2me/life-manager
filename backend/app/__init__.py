@@ -186,14 +186,92 @@ def create_app(config_name=None):
         """Create goals and phases tables."""
         _ensure_goals_tables()
 
-    # CLI: seed goals from Projeto Travessia
+    # CLI: migrate goals to v2 (hierarchical)
     import click
 
+    @app.cli.command('migrate-goals-v2')
+    def migrate_goals_v2():
+        """Add phase_id, goal_type to goals and create goal_checks table."""
+        from sqlalchemy import text as sa_text
+        with db.engine.connect() as conn:
+            # Add phase_id column
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='goals' AND column_name='phase_id'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    'ALTER TABLE goals ADD COLUMN phase_id INTEGER REFERENCES phases(id)'
+                ))
+                print('Added phase_id column to goals.')
+            else:
+                print('phase_id already exists.')
+
+            # Add goal_type column
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='goals' AND column_name='goal_type'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    "ALTER TABLE goals ADD COLUMN goal_type VARCHAR(20) DEFAULT 'metric'"
+                ))
+                print('Added goal_type column to goals.')
+            else:
+                print('goal_type already exists.')
+
+            # Make metric_key nullable (check goals may not have a metric)
+            conn.execute(sa_text(
+                'ALTER TABLE goals ALTER COLUMN metric_key DROP NOT NULL'
+            ))
+            conn.execute(sa_text(
+                'ALTER TABLE goals ALTER COLUMN target_value DROP NOT NULL'
+            ))
+
+            # Create goal_checks table
+            result = conn.execute(sa_text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_name='goal_checks'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text("""
+                    CREATE TABLE goal_checks (
+                        id SERIAL PRIMARY KEY,
+                        goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+                        user_id INTEGER NOT NULL REFERENCES users(id),
+                        date DATE NOT NULL DEFAULT CURRENT_DATE,
+                        event_id INTEGER REFERENCES events(id),
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        CONSTRAINT uq_goal_check_date UNIQUE (goal_id, date)
+                    )
+                """))
+                print('Created goal_checks table.')
+            else:
+                print('goal_checks table already exists.')
+
+            # Ensure "Meta Cumprida" action exists
+            result = conn.execute(sa_text(
+                "SELECT id FROM actions WHERE nome = 'Meta Cumprida'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    "INSERT INTO actions (nome, areas, sinergia) "
+                    "VALUES ('Meta Cumprida', '{\"Saude\": 5, \"Mente\": 3}', true)"
+                ))
+                print('Created "Meta Cumprida" action.')
+            else:
+                print('"Meta Cumprida" action already exists.')
+
+            conn.commit()
+        print('Goals v2 migration complete.')
+
+    # CLI: seed goals from Projeto Travessia
     @app.cli.command('seed-goals')
     @click.argument('user_id', required=False, default=None, type=int)
     def seed_goals_command(user_id):
-        """Create tables (if needed) and seed goals/phases. Usage: flask seed-goals [USER_ID]"""
+        """Create tables, migrate to v2, and seed goals/phases. Usage: flask seed-goals [USER_ID]"""
         _ensure_goals_tables()
+        migrate_goals_v2()
         from .seed.seed_goals import seed_travessia_goals
         seed_travessia_goals(user_id=user_id)
 

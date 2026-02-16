@@ -73,10 +73,13 @@ export const api = {
 
   // Goals
   getGoals: () => apiRequest('/goals'),
+  getDailyGoals: () => apiRequest('/goals/daily'),
   getAllGoals: () => apiRequest('/goals/all'),
   createGoal: (data) => apiRequest('/goals', { method: 'POST', body: JSON.stringify(data) }),
   updateGoal: (id, data) => apiRequest(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteGoal: (id) => apiRequest(`/goals/${id}`, { method: 'DELETE' }),
+  checkGoal: (id) => apiRequest(`/goals/${id}/check`, { method: 'POST' }),
+  uncheckGoal: (id) => apiRequest(`/goals/${id}/check`, { method: 'DELETE' }),
 
   // Phases
   getPhases: () => apiRequest('/goals/phases'),
