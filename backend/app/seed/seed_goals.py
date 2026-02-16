@@ -7,7 +7,13 @@ from ..models.user import User
 def seed_travessia_goals(user_id=None):
     """Seed goals and phases from Projeto Travessia 2026."""
     if user_id is None:
-        user = User.query.first()
+        # Try HEALTH_EXPORT_USER_EMAIL first, then fallback to last user
+        import os
+        export_email = os.environ.get('HEALTH_EXPORT_USER_EMAIL')
+        if export_email:
+            user = User.query.filter_by(email=export_email).first()
+        if not export_email or not user:
+            user = User.query.order_by(User.id.desc()).first()
         if not user:
             print('ERROR: No user found in database.')
             return

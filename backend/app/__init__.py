@@ -187,12 +187,15 @@ def create_app(config_name=None):
         _ensure_goals_tables()
 
     # CLI: seed goals from Projeto Travessia
+    import click
+
     @app.cli.command('seed-goals')
-    def seed_goals_command():
-        """Create tables (if needed) and seed goals/phases from Projeto Travessia 2026."""
+    @click.argument('user_id', required=False, default=None, type=int)
+    def seed_goals_command(user_id):
+        """Create tables (if needed) and seed goals/phases. Usage: flask seed-goals [USER_ID]"""
         _ensure_goals_tables()
         from .seed.seed_goals import seed_travessia_goals
-        seed_travessia_goals()
+        seed_travessia_goals(user_id=user_id)
 
     # CLI: add altura column to users table
     @app.cli.command('add-user-altura')
@@ -214,8 +217,6 @@ def create_app(config_name=None):
         print('Added altura column to users table.')
 
     # CLI: migrate data from one user to another
-    import click
-
     @app.cli.command('migrate-user-data')
     @click.argument('from_id', type=int)
     @click.argument('to_id', type=int)

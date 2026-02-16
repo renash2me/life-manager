@@ -115,10 +115,9 @@ def list_goals():
 
     result = []
     for g in goals:
-        # Only include goals whose date range covers today (or has no dates)
-        if g.start_date and g.end_date:
-            if today < g.start_date or today > g.end_date:
-                continue
+        # Only include goals that haven't ended yet (past goals are excluded)
+        if g.end_date and today > g.end_date:
+            continue
 
         current = _get_current_value(user_id, g.metric_key, g.period_type)
         progress = _calc_progress(current, g.target_value, g.metric_key)
