@@ -100,14 +100,15 @@ function DashboardPage() {
     return <div className="text-center mt-5"><Spinner animation="border" /></div>
   }
 
-  const hasHealthData = healthData && (
-    healthData.steps?.length > 0 ||
-    healthData.sleep?.length > 0 ||
-    healthData.heartRate?.length > 0 ||
-    healthData.weight?.length > 0
+  const hasHealthData = healthData && Object.keys(healthData).some(
+    (k) => k !== '_metricsMeta' && k !== 'workouts' && Array.isArray(healthData[k]) && healthData[k].length > 0
   )
 
   const isToday = selectedDate === new Date().toISOString().slice(0, 10)
+
+  // Extra discovered metrics from summary
+  const extraMetrics = summary?.extraMetrics || {}
+  const extraKeys = Object.keys(extraMetrics)
 
   return (
     <>
@@ -176,6 +177,24 @@ function DashboardPage() {
               )}
             </Col>
           </Row>
+          {extraKeys.length > 0 && (
+            <Row className="g-2 mt-1">
+              {extraKeys.map((key) => {
+                const m = extraMetrics[key]
+                return (
+                  <Col xs={4} key={key}>
+                    <MetricCard
+                      icon="&#x1F4CA;"
+                      label={m.label}
+                      onClick={() => navigate(`/metric/${key}`)}
+                    >
+                      {m.value != null ? `${m.value}${m.unit ? ` ${m.unit}` : ''}` : '--'}
+                    </MetricCard>
+                  </Col>
+                )
+              })}
+            </Row>
+          )}
         </Col>
       </Row>
 

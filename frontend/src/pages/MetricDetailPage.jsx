@@ -25,18 +25,6 @@ const PERIOD_OPTIONS = [
   { label: 'Tudo', value: 9999 },
 ]
 
-const METRIC_COLORS = {
-  steps: '#16a34a',
-  activeEnergy: '#f59e42',
-  distance: '#0ea5e9',
-  weight: '#a21caf',
-  sleep: '#7c3aed',
-  restingHeartRate: '#f43f5e',
-  heartRate: '#f43f5e',
-  mindfulness: '#a855f7',
-  vo2max: '#0ea5e9',
-}
-
 function MetricDetailPage() {
   const { metricKey } = useParams()
   const navigate = useNavigate()
@@ -67,18 +55,22 @@ function MetricDetailPage() {
     )
   }
 
-  const color = METRIC_COLORS[metricKey] || '#7c3aed'
+  // Use color and unit from the API response (dynamic)
+  const color = data.color || '#7c3aed'
+  const unit = data.unit || ''
   const chartData = (data.data || []).map((d) => ({ date: fmtDateShort(d.date), value: d.value }))
+
   const fmtValue = (v) => {
+    if (v == null) return '--'
+    // Special sleep formatting
     if (metricKey === 'sleep') {
       const h = Math.floor(v)
       const m = Math.round((v - h) * 60)
       return `${h}h${String(m).padStart(2, '0')}`
     }
-    if (metricKey === 'distance') return `${v} km`
-    if (metricKey === 'weight') return `${v} kg`
-    if (metricKey === 'vo2max') return `${v} mL/min.kg`
-    return data.unit ? `${v.toLocaleString()} ${data.unit}` : v.toLocaleString()
+    // Use unit from API for all other metrics
+    if (unit) return `${v.toLocaleString()} ${unit}`
+    return v.toLocaleString()
   }
 
   return (

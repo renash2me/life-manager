@@ -6,6 +6,10 @@ from ..extensions import db
 from ..models.health import HealthMetric, Workout
 from ..models.user import User
 from ..services.scoring import calculate_daily_score
+from ..services.metrics import (
+    METRIC_CONFIG, METRIC_NAME_TO_KEY, METRIC_COLORS,
+    get_all_metric_configs,
+)
 from .auth_helpers import get_current_user_id
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -23,7 +27,7 @@ def _aggregate_sum(metric_name, since, user_id):
 
 
 def _aggregate_hr(metric_name, since, user_id):
-    """AVG/MIN/MAX per day for heart rate metrics (data has Avg/Min/Max keys)."""
+    """AVG/MIN/MAX per day for heart rate metrics."""
     rows = db.session.execute(text("""
         SELECT date::date AS day,
                AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val,
@@ -34,6 +38,52 @@ def _aggregate_hr(metric_name, since, user_id):
         GROUP BY day ORDER BY day
     """), {'uid': user_id, 'name': metric_name, 'since': since}).fetchall()
     return rows
+
+
+def _aggregate_latest(metric_name, since, user_id):
+    """Latest value per day."""
+    rows = db.session.execute(text("""
+        SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
+        FROM health_metrics
+        WHERE user_id = :uid AND metric_name = :name AND date >= :since
+        ORDER BY date::date, date DESC
+    """), {'uid': user_id, 'name': metric_name, 'since': since}).fetchall()
+    return rows
+
+
+def _aggregate_sleep(metric_name, since, user_id):
+    """Raw sleep entries."""
+    metrics = HealthMetric.query.filter(
+        HealthMetric.user_id == user_id,
+        HealthMetric.metric_name == metric_name,
+        HealthMetric.date >= since,
+    ).order_by(HealthMetric.date.asc()).all()
+    return metrics
+
+
+def _get_metric_data_points(metric_name, agg, since, user_id):
+    """Get data points for any metric based on aggregation type."""
+    if agg == 'sum':
+        rows = _aggregate_sum(metric_name, since, user_id)
+        return [{'date': str(r.day), 'value': round(r.total, 2)} for r in rows if r.total]
+    elif agg == 'hr':
+        rows = _aggregate_hr(metric_name, since, user_id)
+        return [{'date': str(r.day), 'value': round(r.avg_val or 0, 1),
+                 'min': round(r.min_val or 0, 1), 'max': round(r.max_val or 0, 1)} for r in rows]
+    elif agg == 'latest':
+        rows = _aggregate_latest(metric_name, since, user_id)
+        return [{'date': str(r.day), 'value': round(float(r.qty), 2) if r.qty else 0} for r in rows]
+    elif agg == 'sleep':
+        metrics = _aggregate_sleep(metric_name, since, user_id)
+        data_points = []
+        for m in metrics:
+            val = m.data.get('asleep') or m.data.get('totalSleep') or m.data.get('qty', 0)
+            val = float(val) if val else 0
+            if val > 24:
+                val = val / 3600
+            data_points.append({'date': m.date.isoformat()[:10], 'value': round(val, 2)})
+        return data_points
+    return []
 
 
 def _sum_today(metric_name, target_date, user_id):
@@ -49,134 +99,113 @@ def _sum_today(metric_name, target_date, user_id):
 @dashboard_bp.route('/health', methods=['GET'])
 @jwt_required()
 def health_overview():
-    """Aggregate health data for dashboard display, grouped by day."""
+    """Aggregate health data for dashboard display - dynamically includes ALL metrics."""
     user_id = get_current_user_id()
     days = request.args.get('days', 7, type=int)
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
-    # Steps: SUM per day
-    steps_rows = _aggregate_sum('step_count', since, user_id)
+    all_configs = get_all_metric_configs(user_id)
+    result = {}
 
-    # Heart rate: AVG/MIN/MAX per day
-    hr_rows = _aggregate_hr('heart_rate', since, user_id)
+    for key, cfg in all_configs.items():
+        metric_name = cfg['name']
+        agg = cfg.get('agg', 'sum')
 
-    # Resting heart rate: AVG per day
-    rhr_rows = db.session.execute(text("""
-        SELECT date::date AS day, AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val
-        FROM health_metrics
-        WHERE user_id = :uid AND metric_name = 'resting_heart_rate' AND date >= :since
-        GROUP BY day ORDER BY day
-    """), {'uid': user_id, 'since': since}).fetchall()
+        if agg == 'sum':
+            rows = _aggregate_sum(metric_name, since, user_id)
+            # Keep backward-compatible field names for known metrics
+            if key == 'steps':
+                result[key] = [{'date': str(r.day), 'qty': round(r.total)} for r in rows if r.total]
+            elif key == 'activeEnergy':
+                result[key] = [{'date': str(r.day), 'kcal': round(r.total)} for r in rows if r.total]
+            elif key == 'distance':
+                result[key] = [{'date': str(r.day), 'km': round(r.total, 2)} for r in rows if r.total]
+            elif key == 'mindfulness':
+                result[key] = [{'date': str(r.day), 'minutes': round(r.total, 1)} for r in rows if r.total]
+            else:
+                result[key] = [{'date': str(r.day), 'value': round(r.total, 2)} for r in rows if r.total]
+        elif agg == 'hr':
+            rows = _aggregate_hr(metric_name, since, user_id)
+            if key == 'restingHeartRate':
+                result[key] = [{'date': str(r.day), 'avg': round(r.avg_val or 0, 1)} for r in rows]
+            elif key == 'heartRate':
+                result[key] = [{'date': str(r.day), 'Avg': round(r.avg_val or 0, 1),
+                                'Min': round(r.min_val or 0, 1), 'Max': round(r.max_val or 0, 1)} for r in rows]
+            else:
+                result[key] = [{'date': str(r.day), 'value': round(r.avg_val or 0, 1),
+                                'min': round(r.min_val or 0, 1), 'max': round(r.max_val or 0, 1)} for r in rows]
+        elif agg == 'latest':
+            rows = _aggregate_latest(metric_name, since, user_id)
+            if key == 'weight':
+                result[key] = [{'date': str(r.day), 'qty': float(r.qty) if r.qty else 0} for r in rows]
+            elif key == 'vo2max':
+                result[key] = [{'date': str(r.day), 'qty': round(float(r.qty), 1) if r.qty else 0} for r in rows]
+            else:
+                result[key] = [{'date': str(r.day), 'value': round(float(r.qty), 2) if r.qty else 0} for r in rows]
+        elif agg == 'sleep':
+            metrics = _aggregate_sleep(metric_name, since, user_id)
+            result[key] = [{'date': m.date.isoformat(), **m.data} for m in metrics]
 
-    # Sleep: raw entries (usually 1 per night)
-    sleep = HealthMetric.query.filter(
-        HealthMetric.user_id == user_id,
-        HealthMetric.metric_name == 'sleep_analysis',
-        HealthMetric.date >= since,
-    ).order_by(HealthMetric.date.asc()).all()
-
-    # Weight: latest per day
-    weight_rows = db.session.execute(text("""
-        SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
-        FROM health_metrics
-        WHERE user_id = :uid AND metric_name = 'weight_body_mass'
-        ORDER BY date::date, date DESC
-    """), {'uid': user_id}).fetchall()
-
-    # Active energy: SUM per day
-    energy_rows = _aggregate_sum('active_energy', since, user_id)
-
-    # Walking/running distance: SUM per day
-    distance_rows = _aggregate_sum('walking_running_distance', since, user_id)
-
-    # Workouts
+    # Workouts (special case, not a metric)
     workouts = Workout.query.filter(
         Workout.user_id == user_id,
         Workout.start_time >= since,
     ).order_by(Workout.start_time.desc()).limit(10).all()
+    result['workouts'] = [w.to_dict() for w in workouts]
 
-    # Mindfulness: SUM per day
-    mindful_rows = _aggregate_sum('mindful_minutes', since, user_id)
+    # Include metadata for all metrics (used by frontend to render dynamic charts)
+    result['_metricsMeta'] = {}
+    for key, cfg in all_configs.items():
+        result['_metricsMeta'][key] = {
+            'label': cfg['label'],
+            'unit': cfg.get('unit', ''),
+            'agg': cfg.get('agg', 'sum'),
+            'color': cfg.get('color') or METRIC_COLORS.get(key, '#7c3aed'),
+            'discovered': cfg.get('discovered', False),
+        }
 
-    # VO2 Max: latest per day
-    vo2_rows = db.session.execute(text("""
-        SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
-        FROM health_metrics
-        WHERE user_id = :uid AND metric_name = 'vo2_max' AND date >= :since
-        ORDER BY date::date, date DESC
-    """), {'uid': user_id, 'since': since}).fetchall()
-
-    return jsonify({
-        'steps': [{'date': str(r.day), 'qty': round(r.total)} for r in steps_rows if r.total],
-        'heartRate': [{'date': str(r.day), 'Avg': round(r.avg_val or 0, 1), 'Min': round(r.min_val or 0, 1), 'Max': round(r.max_val or 0, 1)} for r in hr_rows],
-        'restingHeartRate': [{'date': str(r.day), 'avg': round(r.avg_val or 0, 1)} for r in rhr_rows],
-        'sleep': [{'date': m.date.isoformat(), **m.data} for m in sleep],
-        'weight': [{'date': str(r.day), 'qty': float(r.qty) if r.qty else 0} for r in weight_rows],
-        'activeEnergy': [{'date': str(r.day), 'kcal': round(r.total)} for r in energy_rows if r.total],
-        'distance': [{'date': str(r.day), 'km': round(r.total, 2)} for r in distance_rows if r.total],
-        'workouts': [w.to_dict() for w in workouts],
-        'mindfulness': [{'date': str(r.day), 'minutes': round(r.total, 1)} for r in mindful_rows if r.total],
-        'vo2max': [{'date': str(r.day), 'qty': round(float(r.qty), 1) if r.qty else 0} for r in vo2_rows],
-    })
+    return jsonify(result)
 
 
-METRIC_KEY_MAP = {
-    'steps': {'name': 'step_count', 'type': 'sum', 'field': 'qty', 'unit': 'passos', 'label': 'Passos'},
-    'activeEnergy': {'name': 'active_energy', 'type': 'sum', 'field': 'qty', 'unit': 'kcal', 'label': 'Calorias Ativas'},
-    'distance': {'name': 'walking_running_distance', 'type': 'sum', 'field': 'qty', 'unit': 'km', 'label': 'Distancia'},
-    'weight': {'name': 'weight_body_mass', 'type': 'latest', 'field': 'qty', 'unit': 'kg', 'label': 'Peso'},
-    'sleep': {'name': 'sleep_analysis', 'type': 'raw', 'field': 'asleep', 'unit': 'h', 'label': 'Sono'},
-    'restingHeartRate': {'name': 'resting_heart_rate', 'type': 'hr', 'field': 'avg', 'unit': 'bpm', 'label': 'FC Repouso'},
-    'mindfulness': {'name': 'mindful_minutes', 'type': 'sum', 'field': 'qty', 'unit': 'min', 'label': 'Meditacao'},
-    'heartRate': {'name': 'heart_rate', 'type': 'hr', 'field': 'avg', 'unit': 'bpm', 'label': 'Freq. Cardiaca'},
-    'vo2max': {'name': 'vo2_max', 'type': 'latest', 'field': 'qty', 'unit': 'mL/min.kg', 'label': 'VO2 Max'},
-}
+@dashboard_bp.route('/metrics-config', methods=['GET'])
+@jwt_required()
+def metrics_config():
+    """Return config for all available metrics (for frontend pickers/charts)."""
+    user_id = get_current_user_id()
+    all_configs = get_all_metric_configs(user_id)
+    result = []
+    for key, cfg in all_configs.items():
+        agg = cfg.get('agg', 'sum')
+        result.append({
+            'key': key,
+            'label': cfg['label'],
+            'unit': cfg.get('unit', ''),
+            'agg': agg,
+            'chartType': 'line' if agg in ('hr', 'latest') else 'bar',
+            'color': cfg.get('color') or METRIC_COLORS.get(key, '#7c3aed'),
+            'discovered': cfg.get('discovered', False),
+        })
+    return jsonify(result)
 
 
 @dashboard_bp.route('/metric/<metric_key>', methods=['GET'])
 @jwt_required()
 def metric_detail(metric_key):
-    """Return detailed daily data for a specific metric."""
+    """Return detailed daily data for a specific metric (known or discovered)."""
     user_id = get_current_user_id()
-    cfg = METRIC_KEY_MAP.get(metric_key)
+
+    # Try known config first, then dynamic discovery
+    all_configs = get_all_metric_configs(user_id)
+    cfg = all_configs.get(metric_key)
     if not cfg:
         return jsonify({'error': 'Unknown metric'}), 404
 
     days = request.args.get('days', 365, type=int)
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    metric_name = cfg['name']
-    data_points = []
+    agg = cfg.get('agg', 'sum')
 
-    if cfg['type'] == 'sum':
-        rows = _aggregate_sum(metric_name, since, user_id)
-        data_points = [{'date': str(r.day), 'value': round(r.total, 2)} for r in rows if r.total]
-    elif cfg['type'] == 'hr':
-        rows = _aggregate_hr(metric_name, since, user_id)
-        data_points = [{'date': str(r.day), 'value': round(r.avg_val or 0, 1),
-                        'min': round(r.min_val or 0, 1), 'max': round(r.max_val or 0, 1)} for r in rows]
-    elif cfg['type'] == 'latest':
-        rows = db.session.execute(text("""
-            SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
-            FROM health_metrics
-            WHERE user_id = :uid AND metric_name = :name AND date >= :since
-            ORDER BY date::date, date DESC
-        """), {'uid': user_id, 'name': metric_name, 'since': since}).fetchall()
-        data_points = [{'date': str(r.day), 'value': round(float(r.qty), 2) if r.qty else 0} for r in rows]
-    elif cfg['type'] == 'raw':
-        metrics = HealthMetric.query.filter(
-            HealthMetric.user_id == user_id,
-            HealthMetric.metric_name == metric_name,
-            HealthMetric.date >= since,
-        ).order_by(HealthMetric.date.asc()).all()
-        for m in metrics:
-            val = m.data.get('asleep') or m.data.get('totalSleep') or m.data.get('qty', 0)
-            val = float(val) if val else 0
-            # Convert seconds to hours if value looks like seconds
-            if val > 24:
-                val = val / 3600
-            data_points.append({'date': m.date.isoformat()[:10], 'value': round(val, 2)})
+    data_points = _get_metric_data_points(cfg['name'], agg, since, user_id)
 
-    # Calculate stats
     values = [p['value'] for p in data_points if p.get('value')]
     stats = {}
     if values:
@@ -191,24 +220,12 @@ def metric_detail(metric_key):
     return jsonify({
         'key': metric_key,
         'label': cfg['label'],
-        'unit': cfg['unit'],
-        'chartType': 'line' if cfg['type'] in ('hr', 'latest') else 'bar',
+        'unit': cfg.get('unit', ''),
+        'chartType': 'line' if agg in ('hr', 'latest') else 'bar',
+        'color': cfg.get('color') or METRIC_COLORS.get(metric_key, '#7c3aed'),
         'data': data_points,
         'stats': stats,
     })
-
-
-EVOLUTION_COLORS = {
-    'steps': '#16a34a',
-    'activeEnergy': '#f59e42',
-    'distance': '#0ea5e9',
-    'weight': '#a21caf',
-    'sleep': '#7c3aed',
-    'restingHeartRate': '#f43f5e',
-    'heartRate': '#ef4444',
-    'mindfulness': '#a855f7',
-    'vo2max': '#0ea5e9',
-}
 
 
 @dashboard_bp.route('/evolution', methods=['GET'])
@@ -219,47 +236,20 @@ def evolution_data():
     days = request.args.get('days', 365, type=int)
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
+    all_configs = get_all_metric_configs(user_id)
     result_metrics = {}
     available = []
 
-    for key, cfg in METRIC_KEY_MAP.items():
-        metric_name = cfg['name']
-        data_points = []
-
-        if cfg['type'] == 'sum':
-            rows = _aggregate_sum(metric_name, since, user_id)
-            data_points = [{'date': str(r.day), 'value': round(r.total, 2)} for r in rows if r.total]
-        elif cfg['type'] == 'hr':
-            rows = _aggregate_hr(metric_name, since, user_id)
-            data_points = [{'date': str(r.day), 'value': round(r.avg_val or 0, 1)} for r in rows]
-        elif cfg['type'] == 'latest':
-            rows = db.session.execute(text("""
-                SELECT DISTINCT ON (date::date) date::date AS day, data->>'qty' AS qty
-                FROM health_metrics
-                WHERE user_id = :uid AND metric_name = :name AND date >= :since
-                ORDER BY date::date, date DESC
-            """), {'uid': user_id, 'name': metric_name, 'since': since}).fetchall()
-            data_points = [{'date': str(r.day), 'value': round(float(r.qty), 2) if r.qty else 0} for r in rows]
-        elif cfg['type'] == 'raw':
-            metrics = HealthMetric.query.filter(
-                HealthMetric.user_id == user_id,
-                HealthMetric.metric_name == metric_name,
-                HealthMetric.date >= since,
-            ).order_by(HealthMetric.date.asc()).all()
-            for m in metrics:
-                val = m.data.get('asleep') or m.data.get('totalSleep') or m.data.get('qty', 0)
-                val = float(val) if val else 0
-                if val > 24:
-                    val = val / 3600
-                data_points.append({'date': m.date.isoformat()[:10], 'value': round(val, 2)})
+    for key, cfg in all_configs.items():
+        data_points = _get_metric_data_points(cfg['name'], cfg.get('agg', 'sum'), since, user_id)
 
         if data_points:
             result_metrics[key] = data_points
             available.append({
                 'key': key,
                 'label': cfg['label'],
-                'unit': cfg['unit'],
-                'color': EVOLUTION_COLORS.get(key, '#7c3aed'),
+                'unit': cfg.get('unit', ''),
+                'color': cfg.get('color') or METRIC_COLORS.get(key, '#7c3aed'),
             })
 
     return jsonify({'metrics': result_metrics, 'available': available})
@@ -273,13 +263,9 @@ def daily_summary():
     target_date_str = request.args.get('date')
     target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
 
-    # Steps: SUM for target date
     steps_total = _sum_today('step_count', target_date, user_id)
-
-    # Active energy: SUM for target date
     energy_total = _sum_today('active_energy', target_date, user_id)
 
-    # Sleep: latest entry (usually from last night)
     yesterday = target_date - timedelta(days=1)
     latest_sleep = HealthMetric.query.filter(
         HealthMetric.user_id == user_id,
@@ -287,23 +273,19 @@ def daily_summary():
         HealthMetric.date >= datetime.combine(yesterday, datetime.min.time()),
     ).order_by(HealthMetric.date.desc()).first()
 
-    # Weight: latest entry
     latest_weight = HealthMetric.query.filter(
         HealthMetric.user_id == user_id,
         HealthMetric.metric_name == 'weight_body_mass',
     ).order_by(HealthMetric.date.desc()).first()
 
-    # Resting heart rate: latest for target date
     rhr_row = db.session.execute(text("""
         SELECT AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val
         FROM health_metrics
         WHERE user_id = :uid AND metric_name = 'resting_heart_rate' AND date::date = :today
     """), {'uid': user_id, 'today': target_date}).fetchone()
 
-    # Mindfulness: SUM for target date
     mindful_total = _sum_today('mindful_minutes', target_date, user_id)
 
-    # VO2 Max: latest entry ever
     latest_vo2 = HealthMetric.query.filter(
         HealthMetric.user_id == user_id,
         HealthMetric.metric_name == 'vo2_max',
@@ -332,6 +314,36 @@ def daily_summary():
                 imc_cat, imc_color = 'Obesidade III', '#dc2626'
             imc_data = {'value': imc_val, 'category': imc_cat, 'color': imc_color}
 
+    # Also include all discovered metrics for the day
+    all_configs = get_all_metric_configs(user_id)
+    extra_metrics = {}
+    known_keys = {'steps', 'activeEnergy', 'weight', 'sleep', 'restingHeartRate', 'mindfulness', 'vo2max'}
+    for key, cfg in all_configs.items():
+        if key in known_keys:
+            continue
+        metric_name = cfg['name']
+        agg = cfg.get('agg', 'sum')
+        if agg == 'sum':
+            val = _sum_today(metric_name, target_date, user_id)
+            if val:
+                extra_metrics[key] = {'value': round(val, 2), 'label': cfg['label'], 'unit': cfg.get('unit', '')}
+        elif agg == 'latest':
+            row = db.session.execute(text("""
+                SELECT data->>'qty' AS qty FROM health_metrics
+                WHERE user_id = :uid AND metric_name = :name
+                ORDER BY date DESC LIMIT 1
+            """), {'uid': user_id, 'name': metric_name}).fetchone()
+            if row and row.qty:
+                extra_metrics[key] = {'value': round(float(row.qty), 2), 'label': cfg['label'], 'unit': cfg.get('unit', '')}
+        elif agg == 'hr':
+            row = db.session.execute(text("""
+                SELECT AVG(CAST(COALESCE(data->>'Avg', data->>'qty') AS FLOAT)) AS avg_val
+                FROM health_metrics
+                WHERE user_id = :uid AND metric_name = :name AND date::date = :today
+            """), {'uid': user_id, 'name': metric_name, 'today': target_date}).fetchone()
+            if row and row.avg_val:
+                extra_metrics[key] = {'value': round(row.avg_val, 1), 'label': cfg['label'], 'unit': cfg.get('unit', '')}
+
     return jsonify({
         'date': target_date.isoformat(),
         'steps': {'qty': round(steps_total)} if steps_total else None,
@@ -342,6 +354,7 @@ def daily_summary():
         'mindfulness': {'minutes': round(mindful_total, 1)} if mindful_total else None,
         'vo2max': {'qty': round(float(latest_vo2.data.get('qty', 0)), 1)} if latest_vo2 else None,
         'imc': imc_data,
+        'extraMetrics': extra_metrics,
         'score': score,
         'user': user.to_dict() if user else None,
     })

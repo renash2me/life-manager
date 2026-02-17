@@ -70,6 +70,7 @@ export const api = {
 
   // Evolution
   getEvolution: (days = 365) => apiRequest(`/dashboard/evolution?days=${days}`),
+  getMetricsConfig: () => apiRequest('/dashboard/metrics-config'),
 
   // Goals (v3 - tree hierarchy)
   getGoals: () => apiRequest('/goals'),

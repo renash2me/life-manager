@@ -86,13 +86,17 @@ def daily_goals():
 @goals_bp.route('/metrics', methods=['GET'])
 @jwt_required()
 def available_metrics():
-    """Return available metrics for the metric picker in the frontend."""
+    """Return all available metrics (known + discovered) for the metric picker."""
+    from ..services.metrics import get_all_metric_configs, METRIC_COLORS
+    user_id = get_current_user_id()
+    all_configs = get_all_metric_configs(user_id)
     result = []
-    for key, cfg in METRIC_CONFIG.items():
+    for key, cfg in all_configs.items():
         result.append({
             'key': key,
             'label': cfg['label'],
-            'unit': cfg['unit'],
+            'unit': cfg.get('unit', ''),
+            'color': cfg.get('color') or METRIC_COLORS.get(key, '#7c3aed'),
         })
     return jsonify(result)
 
