@@ -33,6 +33,8 @@ def create_app(config_name=None):
     from .routes.user import user_bp
     from .routes.dashboard import dashboard_bp
     from .routes.goals import goals_bp
+    from .routes.nutrition import nutrition_bp
+    from .routes.workout_tracking import workout_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(health_bp, url_prefix='/api/health')
@@ -40,6 +42,8 @@ def create_app(config_name=None):
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(goals_bp, url_prefix='/api/goals')
+    app.register_blueprint(nutrition_bp, url_prefix='/api/nutrition')
+    app.register_blueprint(workout_bp, url_prefix='/api/workouts-tracking')
 
     # API info endpoint
     @app.route('/api/info')
@@ -398,6 +402,29 @@ def create_app(config_name=None):
         _migrate_goals_v3()
         from .seed.seed_goals import seed_travessia_goals
         seed_travessia_goals(user_id=user_id)
+
+    # CLI: seed TACO foods
+    @app.cli.command('seed-taco')
+    def seed_taco_command():
+        """Seed TACO food database (597 Brazilian foods)."""
+        db.create_all()
+        from .seed.seed_nutrition import seed_taco_foods
+        seed_taco_foods()
+
+    # CLI: migrate nutrition tables
+    @app.cli.command('migrate-nutrition')
+    def migrate_nutrition_cmd():
+        """Create nutrition + workout tables."""
+        db.create_all()
+        print('Nutrition and workout tables created.')
+
+    # CLI: seed exercises
+    @app.cli.command('seed-exercises')
+    def seed_exercises_command():
+        """Seed exercise catalog (~48 exercises)."""
+        db.create_all()
+        from .seed.seed_exercises import seed_exercises
+        seed_exercises()
 
     # CLI: add altura column to users table
     @app.cli.command('add-user-altura')

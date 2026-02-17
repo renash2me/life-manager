@@ -10,6 +10,8 @@ import LoginPage from './pages/LoginPage'
 import MetricDetailPage from './pages/MetricDetailPage'
 import EvolutionPage from './pages/EvolutionPage'
 import GoalsPage from './pages/GoalsPage'
+import NutritionPage from './pages/NutritionPage'
+import WorkoutTrackingPage from './pages/WorkoutTrackingPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -32,6 +34,8 @@ function AppLayout() {
     { path: '/events', label: 'Eventos' },
     { path: '/evolucao', label: 'Evolucao' },
     { path: '/metas', label: 'Metas' },
+    { path: '/nutricao', label: 'Nutricao' },
+    { path: '/treinos', label: 'Treinos' },
     { path: '/trophies', label: 'Trofeus' },
     { path: '/profile', label: 'Perfil' },
     { path: '/admin', label: 'Admin' },
@@ -80,6 +84,8 @@ function AppLayout() {
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
           <Route path="/evolucao" element={<ProtectedRoute><EvolutionPage /></ProtectedRoute>} />
           <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
+          <Route path="/nutricao" element={<ProtectedRoute><NutritionPage /></ProtectedRoute>} />
+          <Route path="/treinos" element={<ProtectedRoute><WorkoutTrackingPage /></ProtectedRoute>} />
           <Route path="/metric/:metricKey" element={<ProtectedRoute><MetricDetailPage /></ProtectedRoute>} />
         </Routes>
       </Container>
