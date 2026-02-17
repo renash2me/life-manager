@@ -19,7 +19,7 @@ async function apiRequest(path, options = {}) {
       localStorage.removeItem('lm_token')
       localStorage.removeItem('lm_user')
       window.location.href = '/login'
-      throw new Error('Sessão expirada')
+      throw new Error('Sessao expirada')
     }
   }
 
@@ -71,21 +71,15 @@ export const api = {
   // Evolution
   getEvolution: (days = 365) => apiRequest(`/dashboard/evolution?days=${days}`),
 
-  // Goals
+  // Goals (v3 - tree hierarchy)
   getGoals: () => apiRequest('/goals'),
   getDailyGoals: () => apiRequest('/goals/daily'),
-  getAllGoals: () => apiRequest('/goals/all'),
+  getAvailableMetrics: () => apiRequest('/goals/metrics'),
   createGoal: (data) => apiRequest('/goals', { method: 'POST', body: JSON.stringify(data) }),
   updateGoal: (id, data) => apiRequest(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteGoal: (id) => apiRequest(`/goals/${id}`, { method: 'DELETE' }),
   checkGoal: (id) => apiRequest(`/goals/${id}/check`, { method: 'POST' }),
   uncheckGoal: (id) => apiRequest(`/goals/${id}/check`, { method: 'DELETE' }),
-
-  // Phases
-  getPhases: () => apiRequest('/goals/phases'),
-  createPhase: (data) => apiRequest('/goals/phases', { method: 'POST', body: JSON.stringify(data) }),
-  updatePhase: (id, data) => apiRequest(`/goals/phases/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deletePhase: (id) => apiRequest(`/goals/phases/${id}`, { method: 'DELETE' }),
 
   // Info
   getInfo: () => apiRequest('/info'),

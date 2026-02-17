@@ -261,6 +261,119 @@ def create_app(config_name=None):
             conn.commit()
         print('Goals v2 migration complete.')
 
+    # Helper: migrate goals to v3 (parent_id hierarchy, remove phases)
+    def _migrate_goals_v3():
+        from sqlalchemy import text as sa_text
+        with db.engine.connect() as conn:
+            # 1. Add parent_id column
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='goals' AND column_name='parent_id'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    'ALTER TABLE goals ADD COLUMN parent_id INTEGER REFERENCES goals(id) ON DELETE CASCADE'
+                ))
+                print('Added parent_id column to goals.')
+            else:
+                print('parent_id already exists.')
+
+            # 2. Add name column (populate from description, then set NOT NULL)
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='goals' AND column_name='name'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    'ALTER TABLE goals ADD COLUMN name VARCHAR(200)'
+                ))
+                # Populate name from description
+                conn.execute(sa_text(
+                    "UPDATE goals SET name = COALESCE(LEFT(description, 200), 'Meta sem nome')"
+                ))
+                conn.execute(sa_text(
+                    'ALTER TABLE goals ALTER COLUMN name SET NOT NULL'
+                ))
+                print('Added and populated name column.')
+            else:
+                print('name column already exists.')
+
+            # 3. Add order column
+            result = conn.execute(sa_text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='goals' AND column_name='order'"
+            ))
+            if not result.fetchone():
+                conn.execute(sa_text(
+                    'ALTER TABLE goals ADD COLUMN "order" INTEGER DEFAULT 0'
+                ))
+                print('Added order column.')
+            else:
+                print('order column already exists.')
+
+            # 4. Convert phases into group goals and reparent phase goals
+            result = conn.execute(sa_text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_name='phases'"
+            ))
+            if result.fetchone():
+                # Check if there are phases to migrate
+                phases = conn.execute(sa_text(
+                    'SELECT id, user_id, name, description, start_date, end_date, "order" FROM phases'
+                )).fetchall()
+
+                if phases:
+                    print(f'Migrating {len(phases)} phases to group goals...')
+                    for p in phases:
+                        # Insert phase as group goal
+                        new_goal = conn.execute(sa_text(
+                            "INSERT INTO goals (user_id, name, goal_type, period_type, "
+                            "start_date, end_date, description, active, \"order\") "
+                            "VALUES (:uid, :name, 'group', 'monthly', :start, :end, :desc, true, :ord) "
+                            "RETURNING id"
+                        ), {
+                            'uid': p.user_id, 'name': p.name,
+                            'start': p.start_date, 'end': p.end_date,
+                            'desc': p.description, 'ord': p.order,
+                        }).fetchone()
+
+                        # Reparent goals that belonged to this phase
+                        conn.execute(sa_text(
+                            'UPDATE goals SET parent_id = :new_id WHERE phase_id = :old_id'
+                        ), {'new_id': new_goal.id, 'old_id': p.id})
+                        print(f'  Phase "{p.name}" -> goal #{new_goal.id}')
+
+                # 5. Drop phase_id column from goals
+                result = conn.execute(sa_text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='goals' AND column_name='phase_id'"
+                ))
+                if result.fetchone():
+                    conn.execute(sa_text(
+                        'ALTER TABLE goals DROP COLUMN phase_id'
+                    ))
+                    print('Dropped phase_id column from goals.')
+
+                # 6. Drop phases table
+                conn.execute(sa_text('DROP TABLE IF EXISTS phases CASCADE'))
+                print('Dropped phases table.')
+            else:
+                print('No phases table found (already migrated or fresh install).')
+
+                # Still try to drop phase_id if it exists
+                result = conn.execute(sa_text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='goals' AND column_name='phase_id'"
+                ))
+                if result.fetchone():
+                    conn.execute(sa_text(
+                        'ALTER TABLE goals DROP COLUMN phase_id'
+                    ))
+                    print('Dropped orphan phase_id column.')
+
+            conn.commit()
+        print('Goals v3 migration complete.')
+
     import click
 
     # CLI: migrate goals to v2 (hierarchical)
@@ -269,13 +382,20 @@ def create_app(config_name=None):
         """Add phase_id, goal_type to goals and create goal_checks table."""
         _migrate_goals_v2()
 
+    # CLI: migrate goals to v3 (parent_id hierarchy, remove phases)
+    @app.cli.command('migrate-goals-v3')
+    def migrate_goals_v3_cmd():
+        """Migrate goals to v3: parent_id hierarchy, remove phases."""
+        _migrate_goals_v3()
+
     # CLI: seed goals from Projeto Travessia
     @app.cli.command('seed-goals')
     @click.option('--user-id', default=None, type=int, help='User ID to seed goals for')
     def seed_goals_command(user_id):
-        """Create tables, migrate to v2, and seed goals/phases."""
+        """Migrate to v3 and seed hierarchical goals tree."""
         _ensure_goals_tables()
         _migrate_goals_v2()
+        _migrate_goals_v3()
         from .seed.seed_goals import seed_travessia_goals
         seed_travessia_goals(user_id=user_id)
 
