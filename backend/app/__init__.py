@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask, send_from_directory
 from .config import config
 from .extensions import db, migrate, cors, jwt
@@ -502,60 +503,52 @@ def create_app(config_name=None):
         db.session.commit()
         print(f'Done! All data migrated from user {from_id} ({src.nome}) to user {to_id} ({dst.nome}).')
 
-    # CLI: fix duplicate SUM metrics (steps, calories, distance, etc.)
-    @app.cli.command('fix-duplicate-metrics')
-    def fix_duplicate_metrics():
-        """Deduplicate SUM-type metrics by rounding timestamps to nearest hour.
+    # CLI: inspect raw metric data for a specific day (diagnostic)
+    @app.cli.command('inspect-metric')
+    @click.argument('metric_name')
+    @click.option('--date', default=None, help='Date in YYYY-MM-DD format (default: today)')
+    @click.option('--user-id', default=1, type=int)
+    def inspect_metric(metric_name, date, user_id):
+        """Inspect raw health_metrics records for a metric on a given day.
 
-        Health Auto Export may re-send hourly data with slightly different
-        timestamps (e.g. 09:05 vs 09:15), causing duplicate records that inflate
-        daily totals. This command keeps only the latest record per
-        (user_id, metric_name, hour) bucket for SUM metrics.
+        Usage: flask inspect-metric step_count --date 2026-02-20 --user-id 1
         """
         from sqlalchemy import text as sa_text
-        from .services.health_ingester import _SUM_METRICS
+        target = date or datetime.now().strftime('%Y-%m-%d')
 
-        sum_names = list(_SUM_METRICS)
-        print(f'Fixing duplicates for SUM metrics: {sum_names}')
+        rows = db.session.execute(sa_text("""
+            SELECT id, date, data, metric_units
+            FROM health_metrics
+            WHERE user_id = :uid AND metric_name = :name AND date::date = :d
+            ORDER BY date ASC
+        """), {'uid': user_id, 'name': metric_name, 'd': target}).fetchall()
 
-        total_deleted = 0
-        with db.engine.connect() as conn:
-            for metric_name in sum_names:
-                # Find duplicates: multiple records for the same user, metric, and hour
-                dupes = conn.execute(sa_text("""
-                    SELECT user_id, metric_name,
-                           date_trunc('hour', date) AS hour_bucket,
-                           COUNT(*) AS cnt,
-                           array_agg(id ORDER BY date DESC) AS ids
-                    FROM health_metrics
-                    WHERE metric_name = :name
-                    GROUP BY user_id, metric_name, date_trunc('hour', date)
-                    HAVING COUNT(*) > 1
-                """), {'name': metric_name}).fetchall()
+        print(f'\n{metric_name} on {target} for user {user_id}: {len(rows)} records\n')
 
-                metric_deleted = 0
-                for row in dupes:
-                    ids = row.ids
-                    keep_id = ids[0]  # keep the latest (first in DESC order)
-                    delete_ids = ids[1:]
-                    if delete_ids:
-                        conn.execute(sa_text(
-                            "DELETE FROM health_metrics WHERE id = ANY(:ids)"
-                        ), {'ids': delete_ids})
-                        metric_deleted += len(delete_ids)
+        total_qty = 0
+        for r in rows:
+            qty = r.data.get('qty', 0) if isinstance(r.data, dict) else 0
+            total_qty += float(qty) if qty else 0
+            ts = r.date.strftime('%H:%M:%S') if r.date else '?'
+            print(f'  id={r.id}  time={ts}  qty={qty}  data={r.data}')
 
-                        # Update the kept record's date to the hour bucket
-                        conn.execute(sa_text(
-                            "UPDATE health_metrics SET date = :bucket WHERE id = :keep_id"
-                        ), {'bucket': row.hour_bucket, 'keep_id': keep_id})
+        print(f'\n  TOTAL qty: {total_qty}')
+        print(f'  Records: {len(rows)}')
 
-                if metric_deleted:
-                    print(f'  {metric_name}: deleted {metric_deleted} duplicates')
-                else:
-                    print(f'  {metric_name}: no duplicates found')
-                total_deleted += metric_deleted
+        # Show hour-bucket analysis
+        from collections import defaultdict
+        buckets = defaultdict(list)
+        for r in rows:
+            hour = r.date.strftime('%H:00') if r.date else '?'
+            qty = float(r.data.get('qty', 0)) if isinstance(r.data, dict) else 0
+            buckets[hour].append({'id': r.id, 'time': r.date.strftime('%H:%M:%S'), 'qty': qty})
 
-            conn.commit()
-        print(f'Done! Removed {total_deleted} duplicate records total.')
+        print(f'\n  Hour buckets:')
+        for hour, items in sorted(buckets.items()):
+            bucket_total = sum(i['qty'] for i in items)
+            print(f'    {hour}: {len(items)} records, total={bucket_total}')
+            if len(items) > 1:
+                for item in items:
+                    print(f'      - {item["time"]} qty={item["qty"]} (id={item["id"]})')
 
     return app

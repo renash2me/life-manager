@@ -3,14 +3,6 @@ from ..extensions import db
 from ..models.health import HealthMetric, Workout
 from ..models.user import User
 
-# Metrics that use SUM aggregation - need hourly bucketing to prevent duplicates
-# When Health Auto Export re-sends data for the same hour, we want to upsert, not create a new record
-_SUM_METRICS = {
-    'step_count', 'active_energy', 'walking_running_distance',
-    'mindful_minutes', 'apple_exercise_time', 'basal_energy_burned',
-    'flights_climbed', 'apple_stand_time',
-}
-
 
 def parse_date(date_str):
     """Parse date string from Health Auto Export: '2026-02-09 18:00:00 Z'"""
@@ -66,17 +58,10 @@ def process_health_export(payload, user_id):
                 parsed_date = parse_date(date_str)
                 data_without_date = {k: v for k, v in point.items() if k != 'date'}
 
-                # For SUM metrics (steps, calories, distance, etc.), round to the
-                # nearest hour so re-exports of the same period get upserted instead
-                # of creating duplicate records that inflate totals.
-                lookup_date = parsed_date
-                if metric_name in _SUM_METRICS:
-                    lookup_date = parsed_date.replace(minute=0, second=0, microsecond=0)
-
                 existing = HealthMetric.query.filter_by(
                     user_id=user_id,
                     metric_name=metric_name,
-                    date=lookup_date,
+                    date=parsed_date,
                 ).first()
 
                 if existing:
@@ -87,7 +72,7 @@ def process_health_export(payload, user_id):
                         user_id=user_id,
                         metric_name=metric_name,
                         metric_units=metric_units,
-                        date=lookup_date,
+                        date=parsed_date,
                         data=data_without_date,
                     ))
                 metrics_stored += 1
