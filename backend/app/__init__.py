@@ -502,4 +502,60 @@ def create_app(config_name=None):
         db.session.commit()
         print(f'Done! All data migrated from user {from_id} ({src.nome}) to user {to_id} ({dst.nome}).')
 
+    # CLI: fix duplicate SUM metrics (steps, calories, distance, etc.)
+    @app.cli.command('fix-duplicate-metrics')
+    def fix_duplicate_metrics():
+        """Deduplicate SUM-type metrics by rounding timestamps to nearest hour.
+
+        Health Auto Export may re-send hourly data with slightly different
+        timestamps (e.g. 09:05 vs 09:15), causing duplicate records that inflate
+        daily totals. This command keeps only the latest record per
+        (user_id, metric_name, hour) bucket for SUM metrics.
+        """
+        from sqlalchemy import text as sa_text
+        from .services.health_ingester import _SUM_METRICS
+
+        sum_names = list(_SUM_METRICS)
+        print(f'Fixing duplicates for SUM metrics: {sum_names}')
+
+        total_deleted = 0
+        with db.engine.connect() as conn:
+            for metric_name in sum_names:
+                # Find duplicates: multiple records for the same user, metric, and hour
+                dupes = conn.execute(sa_text("""
+                    SELECT user_id, metric_name,
+                           date_trunc('hour', date) AS hour_bucket,
+                           COUNT(*) AS cnt,
+                           array_agg(id ORDER BY date DESC) AS ids
+                    FROM health_metrics
+                    WHERE metric_name = :name
+                    GROUP BY user_id, metric_name, date_trunc('hour', date)
+                    HAVING COUNT(*) > 1
+                """), {'name': metric_name}).fetchall()
+
+                metric_deleted = 0
+                for row in dupes:
+                    ids = row.ids
+                    keep_id = ids[0]  # keep the latest (first in DESC order)
+                    delete_ids = ids[1:]
+                    if delete_ids:
+                        conn.execute(sa_text(
+                            "DELETE FROM health_metrics WHERE id = ANY(:ids)"
+                        ), {'ids': delete_ids})
+                        metric_deleted += len(delete_ids)
+
+                        # Update the kept record's date to the hour bucket
+                        conn.execute(sa_text(
+                            "UPDATE health_metrics SET date = :bucket WHERE id = :keep_id"
+                        ), {'bucket': row.hour_bucket, 'keep_id': keep_id})
+
+                if metric_deleted:
+                    print(f'  {metric_name}: deleted {metric_deleted} duplicates')
+                else:
+                    print(f'  {metric_name}: no duplicates found')
+                total_deleted += metric_deleted
+
+            conn.commit()
+        print(f'Done! Removed {total_deleted} duplicate records total.')
+
     return app
